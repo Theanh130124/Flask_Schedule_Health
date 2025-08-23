@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="icon" href="/favicon.ico" type="image/x-icon">
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css"
+          integrity="sha512-+4zCK9k+qNFUR5X+cKL9EIR+ZOhtIloNl9GIKS57V1MyNsYpYcUrUeQc9vNfzsWfV28IaLL3i96P9sdNyeRssA=="
+          crossorigin="anonymous"/>
+    <link
+            href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css"
+            rel="stylesheet"
+            integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
+            crossorigin="anonymous"
+    />
+    <script
+            src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+            crossorigin="anonymous"
+    ></script>
+    <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <!-- Thêm CSS Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <!-- Thêm JS Bootstrap -->
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.6/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.min.js"></script>
+    <!--Dinh dang ngay thang-->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+
+</head>
+<body>
+
+<!-- {#header#} -->
+{% block header %}
+{% include 'layout/header.html' %}
+{% endblock %}
+<!-- {#nav-content#} -->
+{% block nav_content %}
+<div class="container-fluid">
+    <div class="row flex-nowrap " style="color: #000;">
+        <div class="col-auto col-md-3 col-xl-2 header">
+            <div class="d-flex flex-column align-items-center align-items-sm-start text-white min-vh-100"
+                 style="margin-top: 10px ">
+                <ul class="nav nav-pills flex-column mb-sm-auto mb-0 align-items-center align-items-sm-start "
+                    id="menu">
+                    <li class="nav-item w-100 my-3">
+                        <a href="/home" class="nav-link align-middle text-white " style="font-size: 16px;">
+                            <i class="fa-solid fa-house"></i> Trang chủ
+                        </a>
+                    </li>
+                    <li class="nav-item w-100 my-3">
+                        <a href="/student/register" class="nav-link align-middle text-white" style="font-size: 16px;">
+                            <i class="fa-solid fa-pen"></i> Đặt lịch khám
+                        </a>
+                    </li>
+
+                    <li class="nav-item w-100 my-3">
+                        <a href="/grade" class="nav-link align-middle text-white" style="font-size: 16px;">
+                            <i class="fa-solid fa-plus"></i> Đặt lịch khám
+                        </a>
+
+                    </li>
+                     <li class="nav-item w-100 my-3">
+                            <a href="/teacher/assignment" class="nav-link align-middle text-white" style="font-size: 16px;">
+                                 <i class="fa-solid fa-plus"></i> Đặt lịch khám
+                            </a>
+                     </li>
+                    <li class="nav-item w-100 my-3">
+                        <a href="/class/edit" class="nav-link align-middle text-white" style="font-size: 16px;">
+                            <i class="fa-solid fa-wrench"></i> Đặt lịch khám
+                        </a>
+                    </li>
+
+                    <li class="nav-item w-100 my-3">
+                        <a href="/regulations" class="nav-link align-middle text-white" style="font-size: 16px;">
+                            <i class="fa-solid fa-circle-info"></i> Đặt lịch khám
+                        </a>
+                    </li>
+
+                    <li class="nav-item w-100 my-3">
+<!--                                                Tìm app.route-->
+                        <a href="/acc_info" class="nav-link align-middle text-white" style="font-size: 16px;">
+                            <i class="fa-solid fa-circle-info"></i> <span>Thông tin tài khoản </span>
+                            ({{current_user.username}})
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <!-- {#content#} -->
+        <div class="col py-3">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+<!-- {#footer#} -->
+{% block footer %}
+{% include 'layout/footer.html' %}
+{% endblock %}
+<script
+        src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM"
+        crossorigin="anonymous"
+></script>
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<script src="https://unpkg.com/jspdf-invoice-template@1.4.0/dist/index.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.0/xlsx.full.min.js"></script>
+<script>
+    window.onload = function () {
+        {% for msg in get_flashed_messages(category_filter=["forbidden"]) %}
+            alert("{{msg}}")
+        {% endfor %}
+    }
+
+        function clearForm() {
+        // Reset form
+        document.getElementById("accountForm").reset();
+    }
+</script>
+
+
+</body>
+</html>
