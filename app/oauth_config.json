@@ -1,0 +1,16 @@
+{
+  "web": {
+    "client_id": "616922019741-85rprhbm2ng2itvvbfhpr9oo8b2hqitc.apps.googleusercontent.com",
+    "project_id": "stacklifo-sjpo",
+    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+    "token_uri": "https://oauth2.googleapis.com/token",
+    "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+    "client_secret": "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",
+    "redirect_uris": [
+      "http://localhost:5000/callback"
+    ],
+    "javascript_origins": [
+      "http://localhost:5000"
+    ]
+  }
+}
