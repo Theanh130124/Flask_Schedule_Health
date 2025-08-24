@@ -1,5 +1,8 @@
 from datetime import datetime
 import enum
+
+from flask_login import UserMixin
+
 from . import db
 from flask_sqlalchemy import SQLAlchemy
 
@@ -57,7 +60,7 @@ class PaymentStatus(enum.Enum):
 
 
 # User
-class User(BaseModel):
+class User(BaseModel ,UserMixin):
     __tablename__ = 'user'
 
     user_id = db.Column(db.Integer, primary_key=True)
@@ -81,6 +84,8 @@ class User(BaseModel):
     doctor = db.relationship('Doctor', lazy=True, backref='user', uselist=False)
     verified_licenses = db.relationship('DoctorLicense', backref='verified_by_admin')
 
+    def get_id(self):
+        return str(self.user_id) # Flask-Login cần id dạng string
 
 # Specialty
 class Specialty(db.Model):
@@ -90,7 +95,7 @@ class Specialty(db.Model):
     name = db.Column(db.String(100), unique=True, nullable=False)
     description = db.Column(db.Text)
 
-    doctor = db.relationship('Doctor', back_populates='specialty', uselist=False)
+
 
 
 # Hospital
@@ -156,12 +161,8 @@ class DoctorLicense(BaseModel):
         db.ForeignKey('user.user_id', ondelete='SET NULL')
     )
 
-    doctor = db.relationship('Doctor', back_populates='licenses')
-    verified_by_admin = db.relationship(
-        'User',
-        back_populates='verified_licenses',
-        foreign_keys=[verified_by_admin_id]
-    )
+
+
 
 
 # Patient
@@ -272,7 +273,7 @@ class Payment(db.Model):
     payment_date = db.Column(db.DateTime, default=datetime.now())
     notes = db.Column(db.Text)
 
-    invoice = db.relationship('Invoice', back_populates='payment')
+
 
 
 # Review

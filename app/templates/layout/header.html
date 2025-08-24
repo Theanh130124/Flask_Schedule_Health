@@ -6,7 +6,11 @@
             <!-- Dropdown User Info -->
             <div class="dropdown d-flex align-items-center hover-dropdown">
                 <!-- Tên người dùng và Avatar -->
-
+                     <button class="btn btn-link text-white dropdown-toggle d-flex align-items-center"
+                        type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                    <h4 class="mr-4" style="font-size: 1rem; text-decoration: none;">{{ user.username }}</h4> <!-- Đảm bảo không có gạch chân -->
+                    <img src="{{ current_user.avatar }}" alt="Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
+                </button>
 
                 <!-- Menu Dropdown -->
 

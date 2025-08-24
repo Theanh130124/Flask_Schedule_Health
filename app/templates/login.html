@@ -35,6 +35,9 @@
         <p class="text-danger">{{ mse }}</p>
         {% endif %}
         <button type="submit" class="btn btn-primary w-100">{{ form.SubmitFieldLogin.label }}</button>
+         <a href="{{ url_for('login_oauth') }}" class="btn btn-danger w-100 mt-3">
+            <i class="fab fa-google"></i> Đăng nhập với Google
+        </a>
 
     </form>
 

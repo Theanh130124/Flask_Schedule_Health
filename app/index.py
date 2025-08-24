@@ -8,8 +8,8 @@ from app import controllers
 @app.context_processor
 def common_attr():
     if current_user.is_authenticated:
-        user = dao_authen.get_info_by_id(current_user.id)
-        doctor = dao_authen.get_doctor_by_userid(current_user.id)
+        user = dao_authen.get_info_by_id(current_user.user_id)
+        doctor = dao_authen.get_doctor_by_userid(current_user.user_id)
         return {
             'user': user,
             'doctor': doctor,
@@ -28,7 +28,12 @@ app.add_url_rule("/login",'login' ,controllers.login ,methods=['GET', 'POST'])
 app.add_url_rule("/logout",'logout_my_user',controllers.logout_my_user , methods=['get'])
 
 
+app.add_url_rule("/oauth" , 'login_oauth', controllers.login_oauth)
+app.add_url_rule("/callback" , 'oauth_callback', controllers.oauth_callback)
+
+
+
 if __name__ == '__main__':
     # with app.app_context():
     #     db.create_all()   # Tạo tất cả bảng trong database
-    app.run(debug=True)
+    app.run(host="localhost", port=5000, debug=True)
