@@ -13,6 +13,8 @@ from app.form import LoginForm
 from app.dao import dao_authen
 from app.models import User
 
+
+#Navigate cho đăng nhập hoac chưa
 def index_controller():
     if current_user.is_authenticated:
         if current_user.user_role == RoleEnum.ADMIN:
