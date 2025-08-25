@@ -9,7 +9,7 @@ def role_only(role):
         def decorated_function(*args, **kwargs):
             if current_user.role not in role:
                 flash("Bạn không có quyền thực hiện chức năng này", "forbidden")
-                return redirect(url_for("index"))
+                return redirect(url_for("index_controller"))
             else:
                 return f(*args, **kwargs)
         return decorated_function
