@@ -17,7 +17,7 @@ from app.models import User
 #Navigate cho đăng nhập hoac chưa
 def index_controller():
     if current_user.is_authenticated:
-        if current_user.user_role == RoleEnum.ADMIN:
+        if current_user.role == RoleEnum.ADMIN:
             return redirect("/admin")
         return redirect("/home")
     return redirect('/login')
@@ -25,12 +25,12 @@ def index_controller():
 
 # Nếu truyền url_for sẽ vào function -> truyền redirect thì vào theo tên .html
 @login_required #-> có login_required bắt buộc phải đăng nhập (current_user.is_authenticated == True )
-@role_only([RoleEnum.ADMIN,RoleEnum.PATIENT])
+# @role_only([RoleEnum.ADMIN,RoleEnum.PATIENT])
 def home():
     page = request.args.get('page', 1 , type=int) # này giữ vậy
     total = 3 #nữa thêm sao
-    return render_template('index.html',  current_page=page,
-                           total_pages=math.ceil(total/app.config["PAGE_SIZE"]) )  # Trang home (index.html)
+    return render_template('index.html',
+                            )  # Trang home (index.html)
 
 
 def login():
