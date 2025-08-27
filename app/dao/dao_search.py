@@ -2,11 +2,11 @@ from app.models import db, Doctor, Hospital, Specialty, User, RoleEnum
 from sqlalchemy import or_
 
 def get_all_hospitals():
-    # sắp xếp A→Z để tiện hiển thị
+  
     return Hospital.query.order_by(Hospital.name.asc()).all()
 
 def get_all_specialties():
-    # sắp xếp A→Z để tiện hiển thị
+  
     return Specialty.query.order_by(Specialty.name.asc()).all()
 
 def search_doctors(hospital_name=None, specialty_name=None, doctor_name=None, limit=None):
