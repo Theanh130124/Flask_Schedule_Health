@@ -14,6 +14,17 @@
 
                 <!-- Menu Dropdown -->
 
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                     <li>
+                        <a class="dropdown-item" href="#">Vai trò: {{ current_user.role.name }}</a>
+                    </li>
+
+                     <li>
+                        <a class="dropdown-item text-danger" href="/logout"> <i class="fa-solid fa-power-off" style="margin-right: 4px"></i>Đăng xuất</a>
+                    </li>
+
+                </ul>
+
             </div>
         </div>
     </div>

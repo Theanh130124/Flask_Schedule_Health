@@ -4,7 +4,7 @@ from app import app, flow, db
 from app.form import LoginForm
 from app.decorators import role_only
 from app.dao import dao_authen, dao_search
-from app.models import Hospital, Specialty, User, Doctor, RoleEnum  # ✅ thêm RoleEnum
+from app.models import Hospital, Specialty, User, Doctor, RoleEnum
 import google.oauth2.id_token
 import google.auth.transport.requests
 import requests
@@ -41,7 +41,7 @@ def api_doctors():
     results = (db.session.query(User)
                .join(Doctor)
                .filter(
-                   User.role == RoleEnum.DOCTOR,                 # ✅ Enum, không dùng chuỗi
+                   User.role == RoleEnum.DOCTOR,
                    (User.first_name.ilike(f"%{q}%")) |
                    (User.last_name.ilike(f"%{q}%"))
                )
@@ -88,7 +88,6 @@ def home():
 def login():
     mse = ""
     form = LoginForm()
-    # ✅ dùng validate_on_submit thay vì gọi field Submit
     if form.validate_on_submit():
         username = form.username.data
         password = form.password.data
@@ -115,47 +114,48 @@ def login_oauth():
     )
     session["state"] = state
     return redirect(authorization_url)
-
 def oauth_callback():
+    # đảm bảo Google trả về state đúng
     if request.args.get("state") != session.get("state"):
         return "State mismatch!", 400
 
     try:
+        # lấy token từ Google
         flow.fetch_token(authorization_response=request.url)
 
         credentials = flow.credentials
         request_session = requests.session()
         token_request = google.auth.transport.requests.Request(session=request_session)
 
+        # verify id_token
         id_info = google.oauth2.id_token.verify_oauth2_token(
             id_token=credentials._id_token,
             request=token_request,
             audience=flow.client_config["client_id"],
-            clock_skew_in_seconds=10
+            clock_skew_in_seconds=10  # cho phép lệch tối đa 10 giây
         )
 
         email = id_info.get("email")
-        name = id_info.get("name") or ""
+        name = id_info.get("name")
 
+        # kiểm tra user trong DB
         user = dao_authen.get_user_by_username(email)
         if not user:
-            # ✅ tránh NOT NULL: phone_number/address phải có giá trị
-            first = name.split(" ")[0] if name else "Google"
-            last = " ".join(name.split(" ")[1:]) if name and len(name.split()) > 1 else "User"
             user = User(
                 username=email,
                 email=email,
-                password="",                 # cột password đang nullable=False
+                password="",  # OAuth không dùng mật khẩu
                 role=RoleEnum.PATIENT,
-                first_name=first,
-                last_name=last,
-                phone_number="0000000000",   # tránh null
-                address="Unknown"            # tránh null
+                first_name=name.split(" ")[0] if name else "Google",
+                last_name=" ".join(name.split(" ")[1:]) if name and len(name.split()) > 1 else "User",
+                phone_number="0000000000",  # placeholder
+                address="Unknown"
             )
             db.session.add(user)
             db.session.commit()
 
         login_user(user)
+
         return redirect(url_for("index_controller"))
 
     except Exception as e:

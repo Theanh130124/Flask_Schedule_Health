@@ -1,6 +1,6 @@
 from werkzeug.security import generate_password_hash
-from models import User
-from config import db
+from app.models  import User
+from app import db
 
 def create_user(fullname, username, email, phone, password):
     hashed_pw = generate_password_hash(password.strip())
