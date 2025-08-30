@@ -30,10 +30,11 @@ app.add_url_rule("/logout",'logout_my_user',controllers.logout_my_user , methods
 
 app.add_url_rule("/oauth" , 'login_oauth', controllers.login_oauth)
 app.add_url_rule("/callback" , 'oauth_callback', controllers.oauth_callback)
+app.add_url_rule("/register", "register", controllers.register, methods=['GET', 'POST'])
 
 
 
 if __name__ == '__main__':
-#  with app.app_context():
-        # db.create_all()   # Tạo tất cả bảng trong database
- app.run(host="localhost", port=5000, debug=True)
+    # with app.app_context():
+    #     db.create_all()   # Tạo tất cả bảng trong database
+    app.run(host="localhost", port=5001, debug=True)
