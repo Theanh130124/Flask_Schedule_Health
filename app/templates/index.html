@@ -34,7 +34,29 @@ HỆ THỐNG ĐẶT LỊCH KHÁM TRỰC TUYẾN
 
     </div>
 </div>
+<!-- Autocomplete JS -->
+<script>
+$(function() {
+    $("#hospital").autocomplete({
+        source: function(request, response) {
+            $.getJSON("/api/hospitals", { q: request.term }, response);
+        },
+        minLength: 1
+    });
 
+    $("#specialty").autocomplete({
+        source: function(request, response) {
+            $.getJSON("/api/specialties", { q: request.term }, response);
+        },
+        minLength: 1
+    });
 
-
+    $("#doctor_name").autocomplete({
+        source: function(request, response) {
+            $.getJSON("/api/doctors", { q: request.term }, response);
+        },
+        minLength: 1
+    });
+});
+</script>
 {% endblock %}

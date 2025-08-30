@@ -1,0 +1,40 @@
+{% extends "layout/base.html" %}
+{% block title %}Kết quả tìm kiếm{% endblock %}
+{% block content %}
+<h2>Kết quả tìm kiếm bác sĩ</h2>
+
+{% if doctors %}
+<table class="table table-striped">
+  <thead>
+    <tr>
+      <th>Tên bác sĩ</th>
+      <th>Bệnh viện</th>
+      <th>Chuyên khoa</th>
+      <th>Kinh nghiệm</th>
+      <th>Phí khám</th>
+      <th>Đánh giá</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for d in doctors %}
+    <tr>
+      <td>{{ d.name }}</td>
+      <td>{{ d.hospital }}</td>
+      <td>{{ d.specialty }}</td>
+      <td>{{ d.experience|default('-', true) }} năm</td>
+      <td>
+        {% if d.consultation_fee is not none %}
+          {{ "{:,.0f}".format(d.consultation_fee) }} đ
+        {% else %}-{% endif %}
+      </td>
+      <td>{{ d.rating|default('-', true) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>Không tìm thấy bác sĩ nào.</p>
+{% endif %}
+
+<a href="{{ url_for('home') }}" class="btn btn-secondary mt-3">Quay lại</a>
+{% endblock %}

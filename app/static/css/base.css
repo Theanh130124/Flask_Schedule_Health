@@ -218,3 +218,21 @@ h1 {
 }
 
 .pagination a:hover:not(.active) {background-color: #ddd;}
+/*CSS cho gợi ý*/
+.suggestions {
+    border: 1px solid #ccc;
+    max-height: 150px;
+    overflow-y: auto;
+    position: absolute;
+    z-index: 1000;
+    background-color: white;
+}
+
+.suggestion-item {
+    padding: 5px;
+    cursor: pointer;
+}
+
+.suggestion-item:hover {
+    background-color: #f0f0f0;
+}
