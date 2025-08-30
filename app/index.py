@@ -36,5 +36,5 @@ app.add_url_rule("/callback" , 'oauth_callback', controllers.oauth_callback)
 if __name__ == '__main__':
 #  with app.app_context():
         # db.create_all()   # Tạo tất cả bảng trong database
-
+ print("a")
  app.run(host="localhost", port=5000, debug=True)
