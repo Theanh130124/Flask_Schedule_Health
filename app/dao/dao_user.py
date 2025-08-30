@@ -2,18 +2,32 @@ from werkzeug.security import generate_password_hash
 from models import User
 from config import db
 
-def create_user(fullname, username, email, phone, password):
-    hashed_pw = generate_password_hash(password.strip())
+def register_user(username, email, password, phone=None, full_name=None):
+
+    # Kiểm tra trùng trung lap username va email
+    if get_user_by_username(username) or check_email_exists(email):
+        return None  # đã tồn tại
+
+    # Băm mật khẩu MD5
+    hashed_password = hashlib.md5(password.strip().encode("utf-8")).hexdigest()
+
+    # Tạo đối tượng User
     new_user = User(
-        fullname=fullname.strip(),
         username=username.strip(),
         email=email.strip(),
+        password=hashed_password,
         phone=phone.strip() if phone else None,
-        password=hashed_pw
+        full_name=full_name.strip() if full_name else None
     )
-    db.session.add(new_user)
-    db.session.commit()
-    return new_user
+
+    try:
+        db.session.add(new_user)
+        db.session.commit()
+        return new_user
+    except Exception as ex:
+        db.session.rollback()
+        print(f" Loi dang ky : {ex}")
+        return None
 
 def check_email_exists(email):
     return User.query.filter_by(email=email).first() is not None
