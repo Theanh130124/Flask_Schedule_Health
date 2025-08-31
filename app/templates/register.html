@@ -18,24 +18,64 @@
     <form method="post" action="/register">
         {{ form.csrf_token }}
 
+        <!-- Username -->
         <div class="form-floating mt-3 mb-2">
             <label class="form-label">Tên đăng nhập</label>
             {{ form.username(class="form-control border-info") }}
         </div>
 
+        <!-- Email -->
         <div class="form-floating mt-3 mb-2">
             <label class="form-label">Email</label>
             {{ form.email(class="form-control border-info") }}
         </div>
 
+        <!-- Password -->
         <div class="form-floating mt-3 mb-2">
             <label class="form-label">Mật khẩu</label>
-            {{ form.password(class="form-control border-info", id="password") }}
+            {{ form.password(class="form-control border-info") }}
         </div>
 
+        <!-- Confirm Password -->
         <div class="form-floating mt-3 mb-3">
             <label class="form-label">Xác nhận mật khẩu</label>
             {{ form.confirm_password(class="form-control border-info") }}
+        </div>
+
+        <!-- First name -->
+        <div class="form-floating mt-3 mb-2">
+            <label class="form-label">Họ</label>
+            {{ form.first_name(class="form-control border-info") }}
+        </div>
+
+        <!-- Last name -->
+        <div class="form-floating mt-3 mb-2">
+            <label class="form-label">Tên</label>
+            {{ form.last_name(class="form-control border-info") }}
+        </div>
+
+        <!-- Phone number -->
+        <div class="form-floating mt-3 mb-2">
+            <label class="form-label">Số điện thoại</label>
+            {{ form.phone_number(class="form-control border-info") }}
+        </div>
+
+        <!-- Address -->
+        <div class="form-floating mt-3 mb-2">
+            <label class="form-label">Địa chỉ</label>
+            {{ form.address(class="form-control border-info") }}
+        </div>
+
+        <!-- Date of Birth -->
+        <div class="form-floating mt-3 mb-2">
+            <label class="form-label">Ngày sinh</label>
+            {{ form.date_of_birth(class="form-control border-info", type="date") }}
+        </div>
+
+        <!-- Gender -->
+        <div class="form-floating mt-3 mb-2">
+            <label class="form-label">Giới tính</label>
+            {{ form.gender(class="form-select border-info") }}
         </div>
 
         <p class="text-warning" id="warning-caps-lock" hidden="hidden">
@@ -57,14 +97,16 @@
     </div>
 
     <script>
-        const pwInput = document.getElementById("password")
-        const labelWarning = document.getElementById("warning-caps-lock")
-        pwInput.addEventListener('keyup',(event)=>{
-            if(event.getModifierState("CapsLock"))
-                labelWarning.removeAttribute("hidden");
-            else
-                labelWarning.setAttribute("hidden", "hidden");
-        })
+        const pwInput = document.getElementById("password"); // WTForms tự sinh id="password"
+        const labelWarning = document.getElementById("warning-caps-lock");
+        if (pwInput) {
+            pwInput.addEventListener('keyup',(event)=>{
+                if(event.getModifierState("CapsLock"))
+                    labelWarning.removeAttribute("hidden");
+                else
+                    labelWarning.setAttribute("hidden", "hidden");
+            })
+        }
     </script>
 </div>
 {% endblock %}

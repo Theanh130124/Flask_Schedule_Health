@@ -12,7 +12,7 @@ import google.auth.transport.requests
 import requests
 from app import app , flow ,db #là import __init__
 from app.form import LoginForm, RegisterForm
-from app.dao import dao_authen
+from app.dao import dao_authen, dao_user
 from app.models import User
 
 
@@ -123,21 +123,30 @@ def register():
         username = form.username.data
         email = form.email.data
         password = form.password.data
+        first_name = form.first_name.data
+        last_name = form.last_name.data
+        phone_number = form.phone_number.data
+        address = form.address.data
+        date_of_birth = form.date_of_birth.data
+        gender = form.gender.data
 
-        # Kiểm tra tồn tại
-        existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
-        if existing_user:
-            mse = "Tên đăng nhập hoặc email đã tồn tại!"
-        else:
-            # Hash mật khẩu
-            hashed_pw = generate_password_hash(password)
+        # Tạo user bằng dao_user
+        new_user = dao_user.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            phone_number=phone_number,
+            address=address,
+            date_of_birth=date_of_birth,
+            gender=gender
+        )
 
-            # Tạo user mới
-            new_user = User(username=username, email=email, password=hashed_pw)
-            db.session.add(new_user)
-            db.session.commit()
-
+        if new_user:
             flash("Đăng ký thành công! Hãy đăng nhập.", "success")
             return redirect(url_for("login"))
+        else:
+            mse = "Tên đăng nhập hoặc email đã tồn tại!"
 
     return render_template("register.html", form=form, mse=mse)
