@@ -1,22 +1,81 @@
 from flask_login import current_user, login_required, logout_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import flash
-
 from app.form import LoginForm
-from app.models import RoleEnum
-from flask import render_template , redirect , request , url_for  , session
+from flask import render_template , redirect , request , url_for  , session , jsonify
 from app.decorators import role_only
 import math
 import google.oauth2.id_token
 import google.auth.transport.requests
 import requests
 from app import app , flow ,db #là import __init__
+from app.models import Hospital, Specialty, User, Doctor, RoleEnum
 from app.form import LoginForm, RegisterForm
-from app.dao import dao_authen, dao_user
+from app.dao import dao_authen, dao_user, dao_search
 from app.models import User
 
 
-#Navigate cho đăng nhập hoac chưa
+
+@app.route("/api/hospitals")
+def api_hospitals():
+    q = request.args.get("q", "")
+    results = (Hospital.query
+               .filter(Hospital.name.ilike(f"%{q}%"))
+               .order_by(Hospital.name.asc())
+               .limit(10)
+               .all())
+    return jsonify([h.name for h in results])
+
+@app.route("/api/specialties")
+def api_specialties():
+    q = request.args.get("q", "")
+    results = (Specialty.query
+               .filter(Specialty.name.ilike(f"%{q}%"))
+               .order_by(Specialty.name.asc())
+               .limit(10)
+               .all())
+    return jsonify([s.name for s in results])
+
+
+@app.route("/api/doctors")
+def api_doctors():
+    q = (request.args.get("q", "") or "").strip()
+    if not q:
+        return jsonify([])
+
+    results = (db.session.query(User)
+               .join(Doctor)
+               .filter(
+                   User.role == RoleEnum.DOCTOR,
+                   (User.first_name.ilike(f"%{q}%")) |
+                   (User.last_name.ilike(f"%{q}%"))
+               )
+               .order_by(User.first_name.asc(), User.last_name.asc())
+               .limit(10)
+               .all())
+
+    return jsonify([f"{u.first_name} {u.last_name}" for u in results])
+
+# -------- VIEW ROUTES --------
+
+def index():
+    # không gán @app.route('/') ở đây: đã có index_controller() trỏ vào bằng add_url_rule
+    hospitals = dao_search.get_all_hospitals()
+    specialties = dao_search.get_all_specialties()
+    return render_template('index.html', hospitals=hospitals, specialties=specialties)
+
+@app.route('/search_doctor')
+def search_doctor():
+    hospital_name = request.args.get('hospital')
+    specialty_name = request.args.get('specialty')
+    doctor_name = request.args.get('doctor_name')
+
+    # nếu dùng cho autocomplete có thể truyền limit=... vào dao
+    doctors = dao_search.search_doctors(hospital_name, specialty_name, doctor_name)
+
+    return render_template('search_results.html', doctors=doctors)
+
+# Navigate cho đăng nhập hoặc chưa
 def index_controller():
     if current_user.is_authenticated:
         if current_user.role == RoleEnum.ADMIN:
@@ -24,21 +83,17 @@ def index_controller():
         return redirect("/home")
     return redirect('/login')
 
-
-# Nếu truyền url_for sẽ vào function -> truyền redirect thì vào theo tên .html
-@login_required #-> có login_required bắt buộc phải đăng nhập (current_user.is_authenticated == True )
-# @role_only([RoleEnum.ADMIN,RoleEnum.PATIENT])
+@app.route('/home')
+@login_required
 def home():
-    page = request.args.get('page', 1 , type=int) # này giữ vậy
-    total = 3 #nữa thêm sao
-    return render_template('index.html',
-                            )  # Trang home (index.html)
-
+    hospitals = Hospital.query.order_by(Hospital.name.asc()).all()
+    specialties = Specialty.query.order_by(Specialty.name.asc()).all()
+    return render_template('index.html', hospitals=hospitals, specialties=specialties)
 
 def login():
     mse = ""
     form = LoginForm()
-    if request.method == "POST" and form.SubmitFieldLogin():
+    if form.validate_on_submit():
         username = form.username.data
         password = form.password.data
         user = dao_authen.get_user_by_username(username=username)
@@ -52,23 +107,18 @@ def login():
                 mse = "Mật khẩu không đúng"
     return render_template('login.html', form=form, mse=mse)
 
-
 def logout_my_user():
     logout_user()
     return redirect('/login')
 
-
 def login_oauth():
-    # luôn yêu cầu quyền offline để lấy refresh_token
     authorization_url, state = flow.authorization_url(
         access_type="offline",
         include_granted_scopes="true",
-        prompt="consent"   # bắt user chọn lại account, tránh lỗi reused code
+        prompt="consent"
     )
     session["state"] = state
     return redirect(authorization_url)
-
-
 def oauth_callback():
     # đảm bảo Google trả về state đúng
     if request.args.get("state") != session.get("state"):

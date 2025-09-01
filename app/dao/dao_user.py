@@ -1,5 +1,6 @@
 from werkzeug.security import generate_password_hash
-from app.models import User, db
+from app.models  import User
+from app import db
 from flask_login import current_user
 import hashlib
 

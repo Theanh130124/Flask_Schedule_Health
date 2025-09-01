@@ -46,6 +46,7 @@ login = LoginManager(app)
 
 # Import routes và models
 from app import  models
+from app import admin
 
 
 
