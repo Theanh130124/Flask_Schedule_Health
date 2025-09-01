@@ -33,6 +33,7 @@ app.add_url_rule("/callback" , 'oauth_callback', controllers.oauth_callback)
 
 print("c")
 print("c")
+print("c")
 
 if __name__ == '__main__':
 #  with app.app_context():
