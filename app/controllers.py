@@ -4,11 +4,16 @@ from flask import flash
 from app.form import LoginForm
 from flask import render_template , redirect , request , url_for  , session , jsonify
 from app.decorators import role_only
+
 import math
+from app.dao import dao_authen, dao_search
+from app.models import Hospital, Specialty, User, Doctor, RoleEnum
+
 import google.oauth2.id_token
 import google.auth.transport.requests
 import requests
-from app import app , flow ,db #là import __init__
+from app import app , flow  #là import __init__
+from app.extensions import db
 from app.models import Hospital, Specialty, User, Doctor, RoleEnum
 from app.form import LoginForm, RegisterForm
 from app.dao import dao_authen, dao_user, dao_search
@@ -165,6 +170,7 @@ def oauth_callback():
 
     except Exception as e:
         app.logger.error(f"OAuth Callback Error: {e}")
+
         return f"Login failed: {e}", 400
 def register():
     form = RegisterForm()
@@ -200,3 +206,4 @@ def register():
             mse = "Tên đăng nhập hoặc email đã tồn tại!"
 
     return render_template("register.html", form=form, mse=mse)
+

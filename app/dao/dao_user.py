@@ -1,8 +1,9 @@
 from werkzeug.security import generate_password_hash
 from app.models  import User
-from app import db
+from app.extensions import db
 from flask_login import current_user
 import hashlib
+
 
 def create_user(username, email, password, first_name, last_name, phone_number, address,
                 date_of_birth=None, gender=None):

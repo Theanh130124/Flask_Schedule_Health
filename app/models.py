@@ -3,7 +3,7 @@ import enum
 
 from flask_login import UserMixin
 
-from . import db
+from app.extensions import db
 from flask_sqlalchemy import SQLAlchemy
 
 

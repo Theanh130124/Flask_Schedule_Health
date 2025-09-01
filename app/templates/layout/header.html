@@ -3,6 +3,28 @@
         <div class="d-flex justify-content-between">
             <img class="navbar-brand text-white logo" src="https://sis.ou.edu.vn/theme/sisv2/assets/logo.png" alt="Logo Trường">
 
+
+
+ <!-- Form tìm kiếm bác sĩ -->
+    <div class="container-fluid my-4">
+        <form action="/search_doctor" method="GET" class="d-flex align-items-center gap-2 justify-content-center">
+            <input type="text" id="hospital" name="hospital"
+                   placeholder="Nhập bệnh viện..."
+                   class="form-control" style="max-width: 250px;">
+
+            <input type="text" id="specialty" name="specialty"
+                   placeholder="Nhập chuyên khoa..."
+                   class="form-control" style="max-width: 250px;">
+
+            <input type="text" id="doctor_name" name="doctor_name"
+                   placeholder="Tên bác sĩ..."
+                   class="form-control" style="max-width: 250px;">
+
+            <button type="submit" class="btn btn-primary">
+                <i class="fa fa-search"></i> Tìm
+            </button>
+        </form>
+    </div>
             <!-- Dropdown User Info -->
             <div class="dropdown d-flex align-items-center hover-dropdown">
                 <!-- Tên người dùng và Avatar -->
@@ -12,7 +34,20 @@
                     <img src="{{ current_user.avatar }}" alt="Avatar" class="rounded-circle" style="width: 40px; height: 40px; object-fit: cover;">
                 </button>
 
+
+
                 <!-- Menu Dropdown -->
+
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                     <li>
+                        <a class="dropdown-item" href="#">Vai trò: {{ current_user.role.name }}</a>
+                    </li>
+
+                     <li>
+                        <a class="dropdown-item text-danger" href="/logout"> <i class="fa-solid fa-power-off" style="margin-right: 4px"></i>Đăng xuất</a>
+                    </li>
+
+                </ul>
 
             </div>
         </div>

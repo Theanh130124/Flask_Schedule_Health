@@ -6,6 +6,7 @@ from flask_login import LoginManager
 from dotenv import load_dotenv
 import os
 from google_auth_oauthlib.flow import Flow
+from .extensions import db, mail, migrate, login
 import pathlib
 
 # Nạp biến môi trường từ .env
@@ -39,10 +40,10 @@ flow = Flow.from_client_secrets_file(
 # App settings
 PAGE_SIZE = 8
 # Khởi tạo các extension
-mail = Mail(app)
-db = SQLAlchemy(app)
-migrate = Migrate(app, db)
-login = LoginManager(app)
+db.init_app(app)
+mail.init_app(app)
+migrate.init_app(app, db)
+login.init_app(app)
 
 # Import routes và models
 from app import  models
