@@ -1,15 +1,25 @@
 from flask_login import current_user, login_required, logout_user, login_user
-from flask import render_template, redirect, request, url_for, session, jsonify
-from app import app, flow, db  
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask import flash
 from app.form import LoginForm
+from flask import render_template , redirect , request , url_for  , session , jsonify
 from app.decorators import role_only
+
+import math
 from app.dao import dao_authen, dao_search
 from app.models import Hospital, Specialty, User, Doctor, RoleEnum
+
 import google.oauth2.id_token
 import google.auth.transport.requests
 import requests
+from app import app , flow  #là import __init__
+from app.extensions import db
+from app.models import Hospital, Specialty, User, Doctor, RoleEnum
+from app.form import LoginForm, RegisterForm
+from app.dao import dao_authen, dao_user, dao_search
+from app.models import User
 
-# -------- AUTOCOMPLETE APIs --------
+
 
 @app.route("/api/hospitals")
 def api_hospitals():
@@ -160,4 +170,40 @@ def oauth_callback():
 
     except Exception as e:
         app.logger.error(f"OAuth Callback Error: {e}")
+
         return f"Login failed: {e}", 400
+def register():
+    form = RegisterForm()
+    mse = None
+    if form.validate_on_submit():
+        username = form.username.data
+        email = form.email.data
+        password = form.password.data
+        first_name = form.first_name.data
+        last_name = form.last_name.data
+        phone_number = form.phone_number.data
+        address = form.address.data
+        date_of_birth = form.date_of_birth.data
+        gender = form.gender.data
+
+        # Tạo user bằng dao_user
+        new_user = dao_user.create_user(
+            username=username,
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            phone_number=phone_number,
+            address=address,
+            date_of_birth=date_of_birth,
+            gender=gender
+        )
+
+        if new_user:
+            flash("Đăng ký thành công! Hãy đăng nhập.", "success")
+            return redirect(url_for("login"))
+        else:
+            mse = "Tên đăng nhập hoặc email đã tồn tại!"
+
+    return render_template("register.html", form=form, mse=mse)
+
