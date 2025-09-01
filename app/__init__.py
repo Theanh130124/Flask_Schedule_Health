@@ -1,15 +1,20 @@
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
+from flask_mail import Mail
+from flask_migrate import Migrate
+from flask_login import LoginManager
 from dotenv import load_dotenv
 import os
-import pathlib
 from google_auth_oauthlib.flow import Flow
-from app.extensions import db, mail, migrate, login
+from .extensions import db, mail, migrate, login
+import pathlib
 
-# Nạp biến môi trường
+# Nạp biến môi trường từ .env
 load_dotenv()
 app = Flask(__name__)
+# Flask secret key
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  #để đăng nhập đc trên localhost
 
 # Database config
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL')
@@ -22,26 +27,30 @@ app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS') == 'True'
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 
-# Google OAuth
 GOOGLE_CLIENT_SECRETS_FILE = os.path.join(pathlib.Path(__file__).parent, "oauth_config.json")
+
 flow = Flow.from_client_secrets_file(
     GOOGLE_CLIENT_SECRETS_FILE,
     scopes=["https://www.googleapis.com/auth/userinfo.profile",
             "https://www.googleapis.com/auth/userinfo.email",
             "openid"],
     redirect_uri="http://localhost:5000/callback"
+
 )
-
+# App settings
 PAGE_SIZE = 8
-
-
+# Khởi tạo các extension
 db.init_app(app)
 mail.init_app(app)
 migrate.init_app(app, db)
 login.init_app(app)
 
-# Import models để SQLAlchemy biết
-from app import models
-
-# Import admin sau khi db đã init
+# Import routes và models
+from app import  models
 from app import admin
+
+
+
+
+
+

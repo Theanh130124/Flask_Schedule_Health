@@ -7,7 +7,7 @@ from app.extensions import db
 from flask_sqlalchemy import SQLAlchemy
 
 
-# Base Model
+# Base Model`
 class BaseModel(db.Model):
     __abstract__ = True  # Không tạo bảng riêng
 

@@ -1,4 +1,4 @@
-from app import app, db , login
+from app import app , login
 from flask_login import current_user
 from app.dao import dao_authen
 from app import controllers
@@ -30,6 +30,7 @@ app.add_url_rule("/logout",'logout_my_user',controllers.logout_my_user , methods
 
 app.add_url_rule("/oauth" , 'login_oauth', controllers.login_oauth)
 app.add_url_rule("/callback" , 'oauth_callback', controllers.oauth_callback)
+app.add_url_rule("/register", "register", controllers.register, methods=['GET', 'POST'])
 
 print("c")
 print("c")
@@ -39,7 +40,11 @@ print("c")
 print("c")
 print("c")
 if __name__ == '__main__':
+
+    # with app.app_context():
+    #     db.create_all()   # Tạo tất cả bảng trong database
+
 #  with app.app_context():
         # db.create_all()   # Tạo tất cả bảng trong database
 
- app.run(host="localhost", port=5000, debug=True)
+ app.run(host="localhost", port=5001, debug=True)
