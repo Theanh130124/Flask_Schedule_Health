@@ -8,7 +8,7 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="year" class="form-label">Năm</label>
                     <select class="form-select" id="year" name="year">
                         <option value="">Tất cả năm</option>
@@ -18,9 +18,9 @@
                     </select>
                 </div>
 
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label for="quarter" class="form-label">Quý</label>
-                    <select class="form-select" id="quarter" name="quarter"  {% if not selected_year or selected_month %}disabled{% endif %}>
+                    <select class="form-select" id="quarter" name="quarter">
                         <option value="">Tất cả quý</option>
                         <option value="1" {% if 1 == selected_quarter %}selected{% endif %}>Quý 1</option>
                         <option value="2" {% if 2 == selected_quarter %}selected{% endif %}>Quý 2</option>
@@ -31,7 +31,7 @@
 
                 <div class="col-md-3">
                     <label for="month" class="form-label">Tháng</label>
-                    <select class="form-select" id="month" name="month" {% if not selected_year %}disabled{% endif %}>
+                    <select class="form-select" id="month" name="month">
                         <option value="">Tất cả tháng</option>
                         {% for i in range(1, 13) %}
                         <option value="{{ i }}" {% if i == selected_month %}selected{% endif %}>{{ i }}</option>
@@ -40,6 +40,18 @@
                 </div>
 
                 <div class="col-md-3">
+                    <label for="doctor_id" class="form-label">Bác sĩ</label>
+                    <select class="form-select" id="doctor_id" name="doctor_id">
+                        <option value="">Tất cả bác sĩ</option>
+                        {% for doctor in doctors %}
+                        <option value="{{ doctor.doctor_id }}" {% if doctor.doctor_id == selected_doctor %}selected{% endif %}>
+                            {{ doctor.user.first_name }} {{ doctor.user.last_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-4">
                     <label class="form-label">&nbsp;</label>
                     <div>
                         <button type="submit" class="btn btn-primary">Lọc</button>
@@ -49,6 +61,60 @@
             </form>
         </div>
     </div>
+
+    <!-- Hiển thị thống kê chi tiết khi chọn bác sĩ cụ thể -->
+    {% if selected_doctor and doctor_stats %}
+    <div class="card mb-4">
+        <div class="card-header">
+            Thống kê chi tiết cho bác sĩ
+            {% for stat in doctor_stats %}
+                {{ stat.first_name }} {{ stat.last_name }} - {{ stat.specialty_name }}
+            {% endfor %}
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Số lượt khám</h5>
+                            <h3 class="text-primary">
+                                {{ doctor_stats[0].appointment_count if doctor_stats else 0 }}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Doanh thu</h5>
+                            <h3 class="text-success">
+                                {% if doctor_stats and doctor_stats[0].total_revenue %}
+                                    {{ "{:,.0f} VNĐ".format(doctor_stats[0].total_revenue) }}
+                                {% else %}
+                                    0 VNĐ
+                                {% endif %}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card text-center">
+                        <div class="card-body">
+                            <h5 class="card-title">Đánh giá TB</h5>
+                            <h3 class="text-warning">
+                                {% if doctor_stats and doctor_stats[0].average_rating %}
+                                    {{ "%.1f"|format(doctor_stats[0].average_rating) }}/5
+                                {% else %}
+                                    Chưa có
+                                {% endif %}
+                            </h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- Biểu đồ -->
     <div class="row mb-4">
@@ -70,10 +136,10 @@
         </div>
     </div>
 
-    <!-- Bảng dữ liệu -->
-    <div class="card">
+    <!-- Bảng dữ liệu thống kê theo thời gian -->
+    <div class="card mb-4">
         <div class="card-header">
-            Dữ liệu thống kê
+            Dữ liệu thống kê theo thời gian
         </div>
         <div class="card-body">
             <div class="table-responsive">
@@ -93,9 +159,51 @@
                             <td>{{ stat.year }}</td>
                             <td>{% if stat.quarter %}Q{{ stat.quarter }}{% endif %}</td>
                             <td>{% if stat.month %}{{ stat.month }}{% endif %}</td>
-<!--                            nếu có moth thì chỉ lọc theo month và quater cũng thế-->
                             <td>{{ stat.appointment_count }}</td>
                             <td>{{ "{:,.0f} VNĐ".format(stat.total_revenue) if stat.total_revenue else 0 }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center">Không có dữ liệu</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng thống kê theo bác sĩ -->
+    <div class="card">
+        <div class="card-header">
+            Thống kê theo bác sĩ
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Bác sĩ</th>
+                            <th>Chuyên khoa</th>
+                            <th>Số lượt khám</th>
+                            <th>Doanh thu</th>
+                            <th>Đánh giá TB</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in all_doctor_stats %}
+                        <tr>
+                            <td>{{ stat.first_name }} {{ stat.last_name }}</td>
+                            <td>{{ stat.specialty_name }}</td>
+                            <td>{{ stat.appointment_count }}</td>
+                            <td>{{ "{:,.0f} VNĐ".format(stat.total_revenue) if stat.total_revenue else 0 }}</td>
+                            <td>
+                                {% if stat.average_rating %}
+                                {{ "%.1f"|format(stat.average_rating) }}/5
+                                {% else %}
+                                Chưa có đánh giá
+                                {% endif %}
+                            </td>
                         </tr>
                         {% else %}
                         <tr>
@@ -112,12 +220,81 @@
 <!-- Script cho biểu đồ -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    // Hàm xử lý logic chọn quý/tháng
+    function handleQuarterMonthSelection() {
+        const quarterSelect = document.getElementById('quarter');
+        const monthSelect = document.getElementById('month');
+        const doctorSelect = document.getElementById('doctor_id');
+
+        quarterSelect.addEventListener('change', function() {
+            if (this.value !== '') {
+                monthSelect.value = '';
+                monthSelect.disabled = true;
+                doctorSelect.value = '';
+                doctorSelect.disabled = true;
+            } else {
+                monthSelect.disabled = false;
+                doctorSelect.disabled = false;
+            }
+        });
+
+        monthSelect.addEventListener('change', function() {
+            if (this.value !== '') {
+                quarterSelect.value = '';
+                quarterSelect.disabled = true;
+                doctorSelect.value = '';
+                doctorSelect.disabled = true;
+            } else {
+                quarterSelect.disabled = false;
+                doctorSelect.disabled = false;
+            }
+        });
+
+        doctorSelect.addEventListener('change', function() {
+            if (this.value !== '') {
+                quarterSelect.value = '';
+                quarterSelect.disabled = true;
+                monthSelect.value = '';
+                monthSelect.disabled = true;
+            } else {
+                quarterSelect.disabled = false;
+                monthSelect.disabled = false;
+            }
+        });
+
+        // Khởi tạo trạng thái ban đầu
+        if (quarterSelect.value !== '') {
+            monthSelect.disabled = true;
+            doctorSelect.disabled = true;
+        } else if (monthSelect.value !== '') {
+            quarterSelect.disabled = true;
+            doctorSelect.disabled = true;
+        } else if (doctorSelect.value !== '') {
+            quarterSelect.disabled = true;
+            monthSelect.disabled = true;
+        }
+    }
+
     // Kích hoạt/quý vô hiệu hóa các select phụ thuộc
     document.getElementById('year').addEventListener('change', function() {
         const yearSelected = this.value !== '';
         document.getElementById('quarter').disabled = !yearSelected;
         document.getElementById('month').disabled = !yearSelected;
+        document.getElementById('doctor_id').disabled = !yearSelected;
+
+        // Nếu năm bị xóa, reset các lựa chọn khác
+        if (!yearSelected) {
+            document.getElementById('quarter').value = '';
+            document.getElementById('month').value = '';
+            document.getElementById('doctor_id').value = '';
+            document.getElementById('quarter').disabled = false;
+            document.getElementById('month').disabled = false;
+            document.getElementById('doctor_id').disabled = false;
+        }
     });
+
+    // Gọi hàm xử lý chọn quý/tháng/bác sĩ
+    handleQuarterMonthSelection();
 
     // Biểu đồ số lượt khám
     const appointmentsCtx = document.getElementById('appointmentsChart').getContext('2d');

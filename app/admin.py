@@ -10,7 +10,7 @@ from app.extensions import db
 from app import app
 from flask import redirect, request
 import hashlib
-from app.dao import dao_stats
+from app.dao import dao_stats , dao_doctor
 from datetime import datetime
 
 
@@ -48,9 +48,11 @@ class LoginUserView(BaseView):
 # User management view
 class UserView(AuthenticatedView):
     column_list = [
-        'username', 'email', 'first_name', 'last_name', 'phone_number',
+        'username', 'email' , 'first_name', 'last_name', 'phone_number',
         'address', 'date_of_birth', 'gender', 'role', 'is_active'
     ]
+
+
 
     column_labels = {
         'username': 'Tên đăng nhập',
@@ -120,12 +122,43 @@ class DoctorView(AuthenticatedView):
     column_filters = ['hospital.name', 'specialty.name']
     can_view_details = True
 
+    # Formatter -> điển hiện ngoài ist
+    def _user_formatter(view, context, model, name):
+        return f"{model.user.first_name} {model.user.last_name}"
 
-# Doctor license management view
+    def _hospital_formatter(view, context, model, name):
+        return model.hospital.name
+
+    def _specialty_formatter(view, context, model, name):
+        return model.specialty.name
+
+    column_formatters = {
+        'user': _user_formatter,
+        'hospital': _hospital_formatter,
+        'specialty': _specialty_formatter
+    }
+
+    # Custom form args -> để hiển cả khi bấm vào create hoặc edit
+    form_args = {
+        'user': {
+            'query_factory': lambda: User.query.filter_by(role=RoleEnum.DOCTOR),  #không viết bên dao được cứ viết thẳng vào vậy
+            'get_label': lambda user: f"{user.first_name} {user.last_name}"
+        },
+        'hospital': {
+            'query_factory': lambda: Hospital.query,
+            'get_label': lambda hospital: hospital.name
+        },
+        'specialty': {
+            'query_factory': lambda: Specialty.query,
+            'get_label': lambda specialty: specialty.name
+        }
+    }
+
+
 class DoctorLicenseView(AuthenticatedView):
     column_list = [
         'doctor', 'license_number', 'issuing_authority',
-        'issue_date', 'expiry_date', 'is_verified'
+        'issue_date', 'expiry_date', 'is_verified' ,
     ]
 
     column_labels = {
@@ -134,53 +167,155 @@ class DoctorLicenseView(AuthenticatedView):
         'issuing_authority': 'Cơ quan cấp',
         'issue_date': 'Ngày cấp',
         'expiry_date': 'Ngày hết hạn',
-        'is_verified': 'Đã xác minh'
+        'is_verified': 'Đã xác minh',
+
     }
 
     column_filters = ['is_verified', 'issuing_authority']
     can_view_details = True
 
+    # Formatter để hiển thị đẹp tên bác sĩ trong list view
+    def _doctor_formatter(view, context, model, name):
+        if model.doctor and model.doctor.user:
+            return f"{model.doctor.user.first_name} {model.doctor.user.last_name}"
+        return ""
+
+    column_formatters = {
+        'doctor': _doctor_formatter
+    }
+
+    # Custom form_args để dropdown chọn bác sĩ khi Create/Edit
+    form_args = {
+        'doctor': {
+            'query_factory': lambda: Doctor.query,
+            'get_label': lambda doctor: f"{doctor.user.first_name} {doctor.user.last_name}"
+        },
+        'verified_by_admin': {
+            'query_factory': lambda: User.query.filter_by(role=RoleEnum.ADMIN),
+            'get_label': lambda user: f"{user.first_name} {user.last_name}"
+        }
+    }
 
 # Patient management view
 class PatientView(AuthenticatedView):
     column_list = ['user', 'medical_history_summary']
+
     column_labels = {
         'user': 'Bệnh nhân',
         'medical_history_summary': 'Tóm tắt tiền sử bệnh'
     }
+
     can_view_details = True
+
+    # formatter: hiển thị tên bệnh nhân trong list view
+    def _user_formatter(view, context, model, name):
+        if model.user:
+            return f"{model.user.first_name} {model.user.last_name}"
+        return ""
+
+    column_formatters = {
+        'user': _user_formatter
+    }
+
+    # khi create/edit: chỉ lấy user có role = PATIENT
+    form_args = {
+        'user': {
+            'query_factory': lambda: User.query.filter_by(role=RoleEnum.PATIENT),
+            'get_label': lambda user: f"{user.first_name} {user.last_name}"
+        }
+    }
+
 
 
 # Appointment management view
 class AppointmentView(AuthenticatedView):
     column_list = [
         'patient', 'doctor', 'appointment_time', 'duration_minutes',
-        'status', 'consultation_type'
+        'reason', 'status', 'consultation_type', 'cancellation_reason'
     ]
 
     column_labels = {
         'patient': 'Bệnh nhân',
         'doctor': 'Bác sĩ',
-        'appointment_time': 'Thời gian hẹn',
+        'appointment_time': 'Thời gian khám',
         'duration_minutes': 'Thời lượng (phút)',
+        'reason': 'Lý do khám',
         'status': 'Trạng thái',
-        'consultation_type': 'Hình thức tư vấn'
+        'consultation_type': 'Hình thức tư vấn',
+        'cancellation_reason': 'Lý do hủy'
     }
 
-    column_filters = ['status', 'consultation_type', 'appointment_time']
     can_view_details = True
 
+    # formatters hiển thị tên bệnh nhân & bác sĩ
+    def _patient_formatter(view, context, model, name):
+        if model.patient and model.patient.user:
+            return f"{model.patient.user.first_name} {model.patient.user.last_name}"
+        return ""
 
-# Health record management view
+    def _doctor_formatter(view, context, model, name):
+        if model.doctor and model.doctor.user:
+            return f"{model.doctor.user.first_name} {model.doctor.user.last_name}"
+        return ""
+
+    column_formatters = {
+        'patient': _patient_formatter,
+        'doctor': _doctor_formatter
+    }
+
+    # dropdown cho patient và doctor
+    form_args = {
+        'patient': {
+            'query_factory': lambda: Patient.query.join(User).filter(User.role == RoleEnum.PATIENT),
+            'get_label': lambda patient: f"{patient.user.first_name} {patient.user.last_name}"
+        },
+        'doctor': {
+            'query_factory': lambda: Doctor.query.join(User).filter(User.role == RoleEnum.DOCTOR),
+            'get_label': lambda doctor: f"{doctor.user.first_name} {doctor.user.last_name}"
+        }
+    }
+
+
 class HealthRecordView(AuthenticatedView):
     column_list = ['patient', 'appointment', 'record_date', 'diagnosis']
+
     column_labels = {
         'patient': 'Bệnh nhân',
         'appointment': 'Cuộc hẹn',
         'record_date': 'Ngày ghi nhận',
         'diagnosis': 'Chẩn đoán'
     }
+
     can_view_details = True
+
+    # formatters
+    def _patient_formatter(view, context, model, name):
+        if model.patient and model.patient.user:
+            return f"{model.patient.user.first_name} {model.patient.user.last_name}"
+        return ""
+
+    def _appointment_formatter(view, context, model, name):
+        if model.appointment and model.appointment.appointment_time:
+            return f"#{model.appointment.appointment_id} - {model.appointment.appointment_time.strftime('%d/%m/%Y %H:%M')}"
+        return ""
+
+    column_formatters = {
+        'patient': _patient_formatter,
+        'appointment': _appointment_formatter
+    }
+
+    # dropdown config
+    form_args = {
+        'patient': {
+            'query_factory': lambda: Patient.query.join(User).filter(User.role == RoleEnum.PATIENT),
+            'get_label': lambda patient: f"{patient.user.first_name} {patient.user.last_name}"
+        },
+        'appointment': {
+            'query_factory': lambda: Appointment.query,
+            'get_label': lambda appt: f"#{appt.appointment_id} - {appt.appointment_time.strftime('%d/%m/%Y %H:%M')}"
+        }
+    }
+
 
 
 # Invoice management view
@@ -196,6 +331,22 @@ class InvoiceView(AuthenticatedView):
     column_filters = ['status', 'issue_date']
     can_view_details = True
 
+    def _appointment_formatter(view, context, model, name):
+        if model.appointment:
+            return f"#{model.appointment.appointment_id} - {model.appointment.appointment_time.strftime('%d/%m/%Y %H:%M')}"
+        return ""
+
+    column_formatters = {
+        'appointment': _appointment_formatter
+    }
+
+    form_args = {
+        'appointment': {
+            'query_factory': lambda: Appointment.query,
+            'get_label': lambda appt: f"#{appt.appointment_id} - {appt.appointment_time.strftime('%d/%m/%Y %H:%M')}"
+        }
+    }
+
 
 # Payment management view
 class PaymentView(AuthenticatedView):
@@ -210,6 +361,21 @@ class PaymentView(AuthenticatedView):
     column_filters = ['status', 'payment_method']
     can_view_details = True
 
+    def _invoice_formatter(view, context, model, name):
+        if model.invoice and model.invoice.appointment:
+            return f"HĐ#{model.invoice.invoice_id} - Cuộc hẹn {model.invoice.appointment.appointment_id}"
+        return ""
+
+    column_formatters = {
+        'invoice': _invoice_formatter
+    }
+
+    form_args = {
+        'invoice': {
+            'query_factory': lambda: Invoice.query,
+            'get_label': lambda inv: f"HĐ#{inv.invoice_id} - Cuộc hẹn {inv.appointment.appointment_id if inv.appointment else ''}"
+        }
+    }
 
 # Review management view
 class ReviewView(AuthenticatedView):
@@ -225,6 +391,43 @@ class ReviewView(AuthenticatedView):
     column_filters = ['rating', 'is_visible']
     can_view_details = True
 
+    # Formatters
+    def _appointment_formatter(view, context, model, name):
+        if model.appointment:
+            return f"#{model.appointment.appointment_id} - {model.appointment.appointment_time.strftime('%d/%m/%Y %H:%M')}"
+        return ""
+
+    def _patient_formatter(view, context, model, name):
+        if model.patient and model.patient.user:
+            return f"{model.patient.user.first_name} {model.patient.user.last_name}"
+        return ""
+
+    def _doctor_formatter(view, context, model, name):
+        if model.doctor and model.doctor.user:
+            return f"BS {model.doctor.user.first_name} {model.doctor.user.last_name}"
+        return ""
+
+    column_formatters = {
+        'appointment': _appointment_formatter,
+        'patient': _patient_formatter,
+        'doctor': _doctor_formatter
+    }
+
+    # dropdown filter theo role
+    form_args = {
+        'appointment': {
+            'query_factory': lambda: Appointment.query,
+            'get_label': lambda appt: f"#{appt.appointment_id} - {appt.appointment_time.strftime('%d/%m/%Y %H:%M')}"
+        },
+        'patient': {
+            'query_factory': lambda: Patient.query.join(User).filter(User.role == RoleEnum.PATIENT),
+            'get_label': lambda p: f"{p.user.first_name} {p.user.last_name}"
+        },
+        'doctor': {
+            'query_factory': lambda: Doctor.query.join(User).filter(User.role == RoleEnum.DOCTOR),
+            'get_label': lambda d: f"BS {d.user.first_name} {d.user.last_name}"
+        }
+    }
 
 class StatsView(AuthenticatedBaseView):
     @expose('/')
@@ -247,9 +450,17 @@ class StatsView(AuthenticatedBaseView):
         ).all()
         years = [int(y[0]) for y in years]
 
+        # Lấy danh sách bác sĩ
+        doctors = Doctor.query.join(User).all()
+
         # Lấy dữ liệu thống kê
         stats_data = dao_stats.get_revenue_by_time_period(year, quarter, month)
         doctor_stats = dao_stats.get_appointment_stats(year, quarter, month, doctor_id)
+
+        # Lấy thống kê tổng quan theo tất cả bác sĩ (khi không chọn bác sĩ cụ thể)
+        all_doctor_stats = []
+        if not doctor_id:
+            all_doctor_stats = dao_stats.get_appointment_stats(year, quarter, month)
 
         # Chuẩn bị dữ liệu cho biểu đồ
         chart_labels = []
@@ -276,6 +487,8 @@ class StatsView(AuthenticatedBaseView):
             'admin/stats.html',
             stats_data=stats_data,
             doctor_stats=doctor_stats,
+            all_doctor_stats=all_doctor_stats,
+            doctors=doctors,
             years=years,
             selected_year=year,
             selected_quarter=quarter,
