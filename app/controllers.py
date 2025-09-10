@@ -1,3 +1,5 @@
+import uuid
+
 from flask_login import current_user, login_required, logout_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import flash
@@ -158,7 +160,7 @@ def oauth_callback():
                 role=RoleEnum.PATIENT,
                 first_name=name.split(" ")[0] if name else "Google",
                 last_name=" ".join(name.split(" ")[1:]) if name and len(name.split()) > 1 else "User",
-                phone_number="0000000000",  # placeholder
+                phone_number=f"GG-{uuid.uuid4().hex[:8]}",  #SĐT giả
                 address="Unknown"
             )
             db.session.add(user)

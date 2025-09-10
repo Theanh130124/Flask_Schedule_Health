@@ -9,5 +9,11 @@ pip install -r requirements.txt
 
 pip freeze > requirements.txt
 
+Tat port jenkin
+
+netstat -ano | findstr :5000
+
+taskkill /PID 12345 /F
+
 
 ```
