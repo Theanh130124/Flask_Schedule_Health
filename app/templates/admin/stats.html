@@ -1,0 +1,180 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<div class="container mt-4">
+    <h2>Thống kê lượt khám và doanh thu</h2>
+
+    <!-- Form lọc dữ liệu -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="year" class="form-label">Năm</label>
+                    <select class="form-select" id="year" name="year">
+                        <option value="">Tất cả năm</option>
+                        {% for y in years %}
+                        <option value="{{ y }}" {% if y == selected_year %}selected{% endif %}>{{ y }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="quarter" class="form-label">Quý</label>
+                    <select class="form-select" id="quarter" name="quarter"  {% if not selected_year or selected_month %}disabled{% endif %}>
+                        <option value="">Tất cả quý</option>
+                        <option value="1" {% if 1 == selected_quarter %}selected{% endif %}>Quý 1</option>
+                        <option value="2" {% if 2 == selected_quarter %}selected{% endif %}>Quý 2</option>
+                        <option value="3" {% if 3 == selected_quarter %}selected{% endif %}>Quý 3</option>
+                        <option value="4" {% if 4 == selected_quarter %}selected{% endif %}>Quý 4</option>
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label for="month" class="form-label">Tháng</label>
+                    <select class="form-select" id="month" name="month" {% if not selected_year %}disabled{% endif %}>
+                        <option value="">Tất cả tháng</option>
+                        {% for i in range(1, 13) %}
+                        <option value="{{ i }}" {% if i == selected_month %}selected{% endif %}>{{ i }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div>
+                        <button type="submit" class="btn btn-primary">Lọc</button>
+                        <a href="{{ url_for('stats.index') }}" class="btn btn-secondary">Xóa bộ lọc</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Biểu đồ -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Số lượt khám theo thời gian</div>
+                <div class="card-body">
+                    <canvas id="appointmentsChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">Doanh thu theo thời gian</div>
+                <div class="card-body">
+                    <canvas id="revenueChart" height="250"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bảng dữ liệu -->
+    <div class="card">
+        <div class="card-header">
+            Dữ liệu thống kê
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Năm</th>
+                            <th>Quý</th>
+                            <th>Tháng</th>
+                            <th>Số lượt khám</th>
+                            <th>Doanh thu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stat in stats_data %}
+                        <tr>
+                            <td>{{ stat.year }}</td>
+                            <td>{% if stat.quarter %}Q{{ stat.quarter }}{% endif %}</td>
+                            <td>{% if stat.month %}{{ stat.month }}{% endif %}</td>
+<!--                            nếu có moth thì chỉ lọc theo month và quater cũng thế-->
+                            <td>{{ stat.appointment_count }}</td>
+                            <td>{{ "{:,.0f} VNĐ".format(stat.total_revenue) if stat.total_revenue else 0 }}</td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="text-center">Không có dữ liệu</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script cho biểu đồ -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Kích hoạt/quý vô hiệu hóa các select phụ thuộc
+    document.getElementById('year').addEventListener('change', function() {
+        const yearSelected = this.value !== '';
+        document.getElementById('quarter').disabled = !yearSelected;
+        document.getElementById('month').disabled = !yearSelected;
+    });
+
+    // Biểu đồ số lượt khám
+    const appointmentsCtx = document.getElementById('appointmentsChart').getContext('2d');
+    new Chart(appointmentsCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_labels | tojson }},
+            datasets: [{
+                label: 'Số lượt khám',
+                data: {{ chart_appointments | tojson }},
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Số lượt khám'
+                    }
+                }
+            }
+        }
+    });
+
+    // Biểu đồ doanh thu
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_labels | tojson }},
+            datasets: [{
+                label: 'Doanh thu (VNĐ)',
+                data: {{ chart_revenues | tojson }},
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Doanh thu (VNĐ)'
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}
