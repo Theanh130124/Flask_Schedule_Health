@@ -39,6 +39,9 @@ class AppointmentStatus(enum.Enum):
     CancelledByDoctor = "CancelledByDoctor"
     NoShow = "NoShow"
 
+class PaymentMethodEnum(enum.Enum):
+    MoMo = "MoMo"
+    ZaloPay = "ZaloPay"
 
 class ConsultationType(enum.Enum):
     Offline = "Offline"
@@ -267,7 +270,7 @@ class Payment(db.Model):
         unique=True
     )
     amount_paid = db.Column(db.Numeric(10, 2), nullable=False)
-    payment_method = db.Column(db.Enum(PaymentStatus), default=PaymentStatus.Pending)
+    payment_method = db.Column(db.Enum(PaymentMethodEnum), nullable=False)
     transaction_id = db.Column(db.String(255), unique=True)
     status = db.Column(db.Enum(PaymentStatus), default=PaymentStatus.Pending)
     payment_date = db.Column(db.DateTime, default=datetime.now())

@@ -9,7 +9,7 @@ from app.decorators import role_only
 
 import math
 from app.dao import dao_authen, dao_search
-from app.models import Hospital, Specialty, User, Doctor, RoleEnum
+from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient
 
 import google.oauth2.id_token
 import google.auth.transport.requests
@@ -164,8 +164,14 @@ def oauth_callback():
                 address="Unknown"
             )
             db.session.add(user)
-            db.session.commit()
-
+            db.session.flush()
+            if user.role == RoleEnum.PATIENT:
+                patient = Patient(
+                    patient_id=user.user_id,
+                    medical_history_summary="Created from Google OAuth"
+                )
+                db.session.add(patient)
+                db.session.commit()
         login_user(user)
 
         return redirect(url_for("index_controller"))
