@@ -1,14 +1,16 @@
 from flask_login import logout_user, current_user
 from flask_admin.contrib.sqla import ModelView
 from flask_admin import expose, BaseView, Admin
+from sqlalchemy import extract
 from app.models import (
     RoleEnum, User, Specialty, Hospital, Doctor, DoctorLicense,
-    Patient, Appointment, HealthRecord, Invoice, Payment, Review
+    Patient, Appointment, HealthRecord, Invoice, Payment, Review, AppointmentStatus
 )
 from app.extensions import db
 from app import app
 from flask import redirect, request
 import hashlib
+from app.dao import dao_stats
 from datetime import datetime
 
 
@@ -17,6 +19,10 @@ class AuthenticatedView(ModelView):
     def is_accessible(self):
         return current_user.is_authenticated and current_user.role == RoleEnum.ADMIN
 
+# Không cần truyền model
+class AuthenticatedBaseView(BaseView):
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.role == RoleEnum.ADMIN
 
 # Logout view
 class LogoutView(BaseView):
@@ -220,6 +226,65 @@ class ReviewView(AuthenticatedView):
     can_view_details = True
 
 
+class StatsView(AuthenticatedBaseView):
+    @expose('/')
+    def index(self):
+        # Lấy tham số từ query string
+        year = request.args.get('year', type=int)
+        quarter = request.args.get('quarter', type=int)
+        month = request.args.get('month', type=int)
+        doctor_id = request.args.get('doctor_id', type=int)
+
+        # Lấy danh sách năm có dữ liệu
+        years = db.session.query(
+            extract('year', Appointment.appointment_time).label('year')
+        ).join(Invoice).filter(
+            Appointment.status == AppointmentStatus.Completed
+        ).group_by(
+            extract('year', Appointment.appointment_time)
+        ).order_by(
+            extract('year', Appointment.appointment_time).desc()
+        ).all()
+        years = [int(y[0]) for y in years]
+
+        # Lấy dữ liệu thống kê
+        stats_data = dao_stats.get_revenue_by_time_period(year, quarter, month)
+        doctor_stats = dao_stats.get_appointment_stats(year, quarter, month, doctor_id)
+
+        # Chuẩn bị dữ liệu cho biểu đồ
+        chart_labels = []
+        chart_appointments = []
+        chart_revenues = []
+
+        for stat in stats_data:
+            year_val = getattr(stat, "year", None)
+            quarter_val = getattr(stat, "quarter", None)
+            month_val = getattr(stat, "month", None)
+
+            if month_val:
+                chart_labels.append(f"{int(month_val)}/{int(year_val)}")
+            elif quarter_val:
+                chart_labels.append(f"Q{int(quarter_val)}/{int(year_val)}")
+            else:
+                chart_labels.append(str(int(year_val)))
+
+            # Thêm dữ liệu số lượt khám và doanh thu
+            chart_appointments.append(stat.appointment_count)
+            chart_revenues.append(float(stat.total_revenue) if stat.total_revenue else 0)
+
+        return self.render(
+            'admin/stats.html',
+            stats_data=stats_data,
+            doctor_stats=doctor_stats,
+            years=years,
+            selected_year=year,
+            selected_quarter=quarter,
+            selected_month=month,
+            selected_doctor=doctor_id,
+            chart_labels=chart_labels,
+            chart_appointments=chart_appointments,
+            chart_revenues=chart_revenues
+        )
 # Initialize admin
 admin = Admin(app, name='Quản lý Đặt lịch khám trực tuyến', template_mode='bootstrap4')
 
@@ -235,6 +300,7 @@ admin.add_view(HealthRecordView(HealthRecord, db.session, name='Hồ sơ sức k
 admin.add_view(InvoiceView(Invoice, db.session, name='Hóa đơn'))
 admin.add_view(PaymentView(Payment, db.session, name='Thanh toán'))
 admin.add_view(ReviewView(Review, db.session, name='Đánh giá'))
+admin.add_view(StatsView(name='Thống kê', endpoint='stats'))
 
 admin.add_view(LogoutView(name='Đăng xuất'))
 admin.add_view(LoginUserView(name='Về trang đăng nhập'))

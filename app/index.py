@@ -32,13 +32,6 @@ app.add_url_rule("/oauth" , 'login_oauth', controllers.login_oauth)
 app.add_url_rule("/callback" , 'oauth_callback', controllers.oauth_callback)
 app.add_url_rule("/register", "register", controllers.register, methods=['GET', 'POST'])
 
-print("c")
-print("c")
-print("c")
-print("c")
-print("c")
-print("c")
-print("c")
 if __name__ == '__main__':
 
     # with app.app_context():
