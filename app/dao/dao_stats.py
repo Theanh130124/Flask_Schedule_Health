@@ -1,5 +1,5 @@
 from sqlalchemy import func, extract, case
-from app.models import Appointment, Invoice, AppointmentStatus
+from app.models import Appointment, Invoice, AppointmentStatus, Doctor, User, Specialty, Review
 from app.extensions import db
 from datetime import datetime
 
@@ -10,10 +10,22 @@ def get_appointment_stats(year=None, quarter=None, month=None, doctor_id=None):
     """
     query = db.session.query(
         Appointment.doctor_id,
+        User.first_name,
+        User.last_name,
+        Specialty.name.label('specialty_name'),
         func.count(Appointment.appointment_id).label('appointment_count'),
-        func.sum(Invoice.amount).label('total_revenue')
+        func.sum(Invoice.amount).label('total_revenue'),
+        func.avg(Review.rating).label('average_rating')
+    ).join(
+        Doctor, Appointment.doctor_id == Doctor.doctor_id
+    ).join(
+        User, Doctor.doctor_id == User.user_id
+    ).join(
+        Specialty, Doctor.specialty_id == Specialty.specialty_id
     ).join(
         Invoice, Appointment.appointment_id == Invoice.appointment_id
+    ).outerjoin(
+        Review, Appointment.appointment_id == Review.appointment_id
     ).filter(
         Appointment.status == AppointmentStatus.Completed
     )
@@ -32,7 +44,12 @@ def get_appointment_stats(year=None, quarter=None, month=None, doctor_id=None):
         query = query.filter(Appointment.doctor_id == doctor_id)
 
     # Nhóm theo bác sĩ
-    query = query.group_by(Appointment.doctor_id)
+    query = query.group_by(
+        Appointment.doctor_id,
+        User.first_name,
+        User.last_name,
+        Specialty.name
+    )
 
     return query.all()
 
