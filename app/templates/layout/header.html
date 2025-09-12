@@ -42,6 +42,13 @@
                      <li>
                         <a class="dropdown-item" href="#">Vai trò: {{ current_user.role.name }}</a>
                     </li>
+<!--                    Chỉ có doctor thấy-->
+                        {% if current_user.role.name == 'DOCTOR' %}
+                        <li>
+                            <a class="dropdown-item" href="/create_schedule">Tạo lịch làm việc</a>
+                        </li>
+                        {% endif %}
+
 
                      <li>
                         <a class="dropdown-item text-danger" href="/logout"> <i class="fa-solid fa-power-off" style="margin-right: 4px"></i>Đăng xuất</a>

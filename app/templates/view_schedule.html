@@ -1,0 +1,49 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Lịch làm việc của tôi</h2>
+    <p class="text-muted">Bác sĩ: {{ doctor.user.first_name }} {{ doctor.user.last_name }}</p>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between mb-3">
+                <a href="{{ url_for('create_schedule') }}" class="btn btn-primary">Chỉnh sửa lịch</a>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Ngày</th>
+                            <th>Giờ làm việc</th>
+                            <th>Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for day in days %}
+                        <tr>
+                            <td>{{ day.name }}</td>
+                            <td>
+                                {% if day.is_available %}
+                                    {{ day.start_time }} - {{ day.end_time }}
+                                {% else %}
+                                    <span class="text-muted">Nghỉ</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if day.is_available %}
+                                    <span class="badge bg-success">Có sẵn</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Nghỉ</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

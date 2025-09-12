@@ -1,7 +1,10 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
+from wtforms import TimeField, BooleanField
 from wtforms.fields import StringField, EmailField, SubmitField, PasswordField, SelectField, DateField, IntegerField
 from wtforms.validators import InputRequired, Length, NumberRange, Regexp, DataRequired, ValidationError, Email, EqualTo, Optional
+
+from app.models import DayOfWeekEnum
 
 
 class LoginForm(FlaskForm):
@@ -9,6 +12,7 @@ class LoginForm(FlaskForm):
                            render_kw={"placeholder": "Tên đăng nhập"})
     password = PasswordField(validators=[InputRequired()], render_kw={"placeholder": "Mật khẩu"})
     SubmitFieldLogin = SubmitField("Đăng nhập")
+
 class RegisterForm(FlaskForm):
     # Các trường bắt buộc theo schema của bạn (NOT NULL)
     username = StringField(
@@ -16,25 +20,21 @@ class RegisterForm(FlaskForm):
         validators=[DataRequired(), Length(min=4, max=100)],
         render_kw={"placeholder": "Tên đăng nhập"}
     )
-
     email = EmailField(
         "Email",
         validators=[DataRequired(), Email(), Length(max=255)],
         render_kw={"placeholder": "Email"}
     )
-
     password = PasswordField(
         "Mật khẩu",
         validators=[DataRequired(), Length(min=6)],
         render_kw={"placeholder": "Mật khẩu"}
     )
-
     confirm_password = PasswordField(
         "Xác nhận mật khẩu",
         validators=[DataRequired(), EqualTo("password", message="Mật khẩu không khớp")],
         render_kw={"placeholder": "Xác nhận mật khẩu"}
     )
-
     # Họ / Tên (cần thiết theo schema)
     first_name = StringField(
         "Họ",
@@ -46,7 +46,6 @@ class RegisterForm(FlaskForm):
         validators=[DataRequired(), Length(min=1, max=100)],
         render_kw={"placeholder": "Tên (ví dụ: Kiên An)"}
     )
-
     # SĐT và địa chỉ (bắt buộc)
     phone_number = StringField(
         "Số điện thoại",
@@ -57,13 +56,11 @@ class RegisterForm(FlaskForm):
         ],
         render_kw={"placeholder": "Số điện thoại (ví dụ: +84901234567)"}
     )
-
     address = StringField(
         "Địa chỉ",
         validators=[DataRequired(), Length(min=3, max=500)],
         render_kw={"placeholder": "Địa chỉ"}
     )
-
     # Những trường không bắt buộc (DB cho phép NULL)
     date_of_birth = DateField(
         "Ngày sinh",
@@ -71,11 +68,20 @@ class RegisterForm(FlaskForm):
         validators=[Optional()],
         render_kw={"placeholder": "YYYY-MM-DD"}
     )
-
     gender = SelectField(
         "Giới tính",
         choices=[("MALE", "Nam"), ("FEMALE", "Nữ"), ("OTHER", "Khác")],
         validators=[Optional()]
     )
-
     submit = SubmitField("Đăng ký")
+
+
+class ScheduleForm(FlaskForm):
+    day_of_week = SelectField('Ngày trong tuần', choices=[(day.name, day.value) for day in DayOfWeekEnum],
+                              validators=[DataRequired()])
+    start_time = TimeField('Giờ bắt đầu', format='%H:%M', validators=[DataRequired()])
+    end_time = TimeField('Giờ kết thúc', format='%H:%M', validators=[DataRequired()])
+    is_available = BooleanField('Có sẵn', default=True)
+    submit = SubmitField('Tạo lịch')
+
+
