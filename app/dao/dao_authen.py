@@ -31,3 +31,6 @@ def check_email_exists(email):
 
 def check_phone_exists(phone):
     return User.query.filter_by(phone=phone).first() is not None
+
+
+
