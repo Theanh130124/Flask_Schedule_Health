@@ -3,13 +3,13 @@ import uuid
 from flask_login import current_user, login_required, logout_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import flash
-from app.form import LoginForm
+from app.form import LoginForm, ScheduleForm
 from flask import render_template , redirect , request , url_for  , session , jsonify
 from app.decorators import role_only
 
 import math
-from app.dao import dao_authen, dao_search
-from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient
+from app.dao import dao_authen, dao_search, dao_doctor
+from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum
 
 import google.oauth2.id_token
 import google.auth.transport.requests
@@ -215,3 +215,62 @@ def register():
 
     return render_template("register.html", form=form, mse=mse)
 
+#Lịch làm việc bác sĩ
+@app.route('/create_schedule', methods=['GET', 'POST'])
+@login_required
+@role_only([RoleEnum.DOCTOR])
+def create_schedule():
+    form = ScheduleForm()
+    # Lấy thông tin doctor từ current_user
+    doctor = dao_authen.get_doctor_by_userid(current_user.user_id)
+    if not doctor:
+        flash("Bạn không phải là bác sĩ", "error")
+        return redirect(url_for('home'))
+    if form.validate_on_submit():
+        try:
+            # Tạo lịch làm việc
+            dao_doctor.create_doctor_availability(
+                doctor_id=doctor.doctor_id,
+                day_of_week=form.day_of_week.data,
+                start_time=form.start_time.data,
+                end_time=form.end_time.data,
+                is_available=form.is_available.data
+            )
+
+            flash("Lịch làm việc đã được cập nhật thành công!", "success")
+            return redirect(url_for('view_schedule'))
+
+        except Exception as e:
+            flash(f"Có lỗi xảy ra: {str(e)}", "error")
+
+    # Hiển thị form với dữ liệu hiện tại nếu có
+    return render_template('create_schedule.html', form=form, doctor=doctor)
+
+
+@app.route('/view_schedule')
+@login_required
+@role_only([RoleEnum.DOCTOR])
+def view_schedule():
+    # Lấy thông tin doctor từ current_user
+    doctor = dao_authen.get_doctor_by_userid(current_user.user_id)
+
+    if not doctor:
+        flash("Bạn không phải là bác sĩ", "error")
+        return redirect(url_for('home'))
+
+    # Lấy tất cả lịch làm việc của bác sĩ
+    availabilities = dao_doctor.get_doctor_availabilities(doctor.doctor_id)
+
+    # Tạo danh sách tất cả các ngày trong tuần
+    days = []
+    for day in DayOfWeekEnum:
+        availability = next((a for a in availabilities if a.day_of_week == day), None)
+        days.append({
+            'name': day.value,
+            'enum_name': day.name,
+            'start_time': availability.start_time.strftime('%H:%M') if availability else 'N/A',
+            'end_time': availability.end_time.strftime('%H:%M') if availability else 'N/A',
+            'is_available': availability.is_available if availability else False
+        })
+
+    return render_template('view_schedule.html', days=days, doctor=doctor)

@@ -1,0 +1,40 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Tạo lịch làm việc</h2>
+    <p class="text-muted">Bác sĩ: {{ doctor.user.first_name }} {{ doctor.user.last_name }}</p>
+
+    <div class="card">
+        <div class="card-body">
+            <form method="POST">
+                {{ form.hidden_tag() }}
+
+                <div class="mb-3">
+                    {{ form.day_of_week.label(class="form-label") }}
+                    {{ form.day_of_week(class="form-select") }}
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col">
+                        {{ form.start_time.label(class="form-label") }}
+                        {{ form.start_time(class="form-control", type="time") }}
+                    </div>
+                    <div class="col">
+                        {{ form.end_time.label(class="form-label") }}
+                        {{ form.end_time(class="form-control", type="time") }}
+                    </div>
+                </div>
+
+                <div class="mb-3 form-check">
+                    {{ form.is_available(class="form-check-input") }}
+                    {{ form.is_available.label(class="form-check-label") }}
+                </div>
+
+                {{ form.submit(class="btn btn-primary") }}
+                <a href="{{ url_for('view_schedule') }}" class="btn btn-secondary">Xem lịch</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

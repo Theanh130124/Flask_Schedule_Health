@@ -18,6 +18,15 @@ class BaseModel(db.Model):
         onupdate=datetime.now()
     )
 
+class DayOfWeekEnum(enum.Enum):
+    MONDAY = "Monday"
+    TUESDAY = "Tuesday"
+    WEDNESDAY = "Wednesday"
+    THURSDAY = "Thursday"
+    FRIDAY = "Friday"
+    SATURDAY = "Saturday"
+    SUNDAY = "Sunday"
+
 
 # Enums
 class RoleEnum(enum.Enum):
@@ -165,9 +174,45 @@ class DoctorLicense(BaseModel):
     )
 
 
+class DoctorAvailability(BaseModel):
+    __tablename__ = 'doctoravailability'
+
+    availability_id = db.Column(db.Integer, primary_key=True)
+    doctor_id = db.Column(
+        db.Integer,
+        db.ForeignKey('doctor.doctor_id', ondelete='CASCADE'),
+        nullable=False
+    )
+    day_of_week = db.Column(db.Enum(DayOfWeekEnum), nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    is_available = db.Column(db.Boolean, default=True)
+
+    # Đảm bảo mỗi bác sĩ chỉ có một thiết lập cho mỗi ngày trong tuần
+    __table_args__ = (
+        db.UniqueConstraint('doctor_id', 'day_of_week', name='unique_doctor_day'),
+    )
 
 
+class AvailableSlot(BaseModel):
+    __tablename__ = 'availableslot'
 
+    slot_id = db.Column(db.Integer, primary_key=True)
+    doctor_id = db.Column(
+        db.Integer,
+        db.ForeignKey('doctor.doctor_id', ondelete='CASCADE'),
+        nullable=False
+    )
+    slot_date = db.Column(db.Date, nullable=False)
+    start_time = db.Column(db.Time, nullable=False)
+    end_time = db.Column(db.Time, nullable=False)
+    is_booked = db.Column(db.Boolean, default=False)
+
+    # Để tối ưu hiệu suất truy vấn
+    __table_args__ = (
+        db.Index('idx_doctor_date', 'doctor_id', 'slot_date'),
+        db.Index('idx_available_slots', 'doctor_id', 'slot_date', 'is_booked'),
+    )
 # Patient
 class Patient(db.Model):
     __tablename__ = 'patient'
