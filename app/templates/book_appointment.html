@@ -1,0 +1,52 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Xác nhận đặt lịch</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Thông tin lịch khám</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Bác sĩ:</strong> Dr. {{ slot.doctor.user.first_name }} {{ slot.doctor.user.last_name }}</p>
+                                <p><strong>Chuyên khoa:</strong> {{ slot.doctor.specialty.name }}</p>
+                                <p><strong>Bệnh viện:</strong> {{ slot.doctor.hospital.name }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Ngày:</strong> {{ slot.slot_date.strftime('%d/%m/%Y') }}</p>
+                                <p><strong>Giờ:</strong> {{ slot.start_time.strftime('%H:%M') }} - {{ slot.end_time.strftime('%H:%M') }}</p>
+                                <p><strong>Phí khám:</strong> {{ "{:,.0f} VNĐ".format(slot.doctor.consultation_fee) }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Lý do khám</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="3" required></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="consultation_type" class="form-label">Hình thức khám</label>
+                            <select class="form-select" id="consultation_type" name="consultation_type" required>
+                                <option value="Offline">Khám trực tiếp</option>
+                                <option value="Online">Khám trực tuyến</option>
+                            </select>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-primary btn-lg">Xác nhận đặt lịch</button>
+                            <a href="{{ url_for('available_slots') }}" class="btn btn-secondary">Quay lại</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

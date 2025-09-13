@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime , date
 
 from flask_login import current_user, login_required, logout_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -8,8 +9,9 @@ from flask import render_template , redirect , request , url_for  , session , js
 from app.decorators import role_only
 
 import math
-from app.dao import dao_authen, dao_search, dao_doctor
-from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum
+from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment
+from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot, \
+    ConsultationType
 
 import google.oauth2.id_token
 import google.auth.transport.requests
@@ -171,7 +173,18 @@ def oauth_callback():
                     medical_history_summary="Created from Google OAuth"
                 )
                 db.session.add(patient)
+                # Tạo một HealthRecord trống cho lần đầu khám
+                health_record = HealthRecord(
+                    patient_id=user.user_id,
+                    record_date=datetime.now().date(),
+                    symptoms="",
+                    diagnosis="",
+                    prescription="",
+                    notes="Bệnh nhân mới - Hồ sơ được tạo tự động từ OAuth"
+                )
+                db.session.add(health_record)
                 db.session.commit()
+                #
         login_user(user)
 
         return redirect(url_for("index_controller"))
@@ -274,3 +287,161 @@ def view_schedule():
         })
 
     return render_template('view_schedule.html', days=days, doctor=doctor)
+
+
+@app.route('/availableslot')
+@login_required
+@role_only([RoleEnum.PATIENT])
+def available_slots():
+    # Lấy các tham số lọc từ query string
+    hospital_id = request.args.get('hospital_id', type=int)
+    specialty_id = request.args.get('specialty_id', type=int)
+    doctor_id = request.args.get('doctor_id', type=int)
+    date_str = request.args.get('date')
+
+    date_filter = None
+    if date_str:
+        try:
+            date_filter = datetime.strptime(date_str, '%Y-%m-%d').date()
+        except ValueError:
+            pass
+
+    # Lấy danh sách slot khả dụng với bộ lọc
+    available_slots = dao_available_slot.get_available_slots_by_filters(
+        hospital_id=hospital_id,
+        specialty_id=specialty_id,
+        doctor_id=doctor_id,
+        date=date_filter
+    )
+
+    # Lấy danh sách bệnh viện và chuyên khoa cho dropdown
+    hospitals = Hospital.query.order_by(Hospital.name).all()
+    specialties = Specialty.query.order_by(Specialty.name).all()
+
+    # Lấy ngày hiện tại để set min date cho input
+    current_date = date.today().strftime('%Y-%m-%d')
+
+    return render_template('available_slots.html',
+                           available_slots=available_slots,
+                           hospitals=hospitals,
+                           specialties=specialties,
+                           selected_hospital=hospital_id,
+                           selected_specialty=specialty_id,
+                           selected_doctor=doctor_id,
+                           selected_date=date_str,
+                           current_date=current_date)  # Thêm current_date vào context
+
+
+@app.route('/book_appointment/<int:slot_id>', methods=['GET', 'POST'])
+@login_required
+@role_only([RoleEnum.PATIENT])
+def book_appointment(slot_id):
+    # Lấy thông tin slot
+    slot = AvailableSlot.query.get_or_404(slot_id)
+
+    if request.method == 'POST':
+        reason = request.form.get('reason', '')
+        consultation_type = request.form.get('consultation_type', ConsultationType.Offline.value)
+
+        # Đặt lịch
+        appointment, message = dao_appointment.book_appointment(
+            patient_id=current_user.user_id,
+            slot_id=slot_id,
+            reason=reason,
+            consultation_type=ConsultationType(consultation_type)
+        )
+
+        if appointment:
+            flash(message, 'success')
+            return redirect(url_for('appointment_detail', appointment_id=appointment.appointment_id))
+        else:
+            flash(message, 'error')
+
+    return render_template('book_appointment.html', slot=slot)
+
+
+@app.route('/appointment/<int:appointment_id>')
+@login_required
+def appointment_detail(appointment_id):
+    appointment = dao_appointment.get_appointment_by_id(appointment_id)
+
+    if not appointment:
+        flash('Lịch hẹn không tồn tại', 'error')
+        return redirect(url_for('home'))
+
+    # Kiểm tra quyền truy cập
+    if (appointment.patient_id != current_user.user_id and
+            (current_user.role != RoleEnum.DOCTOR or appointment.doctor_id != current_user.user_id)
+            ):
+        flash('Bạn không có quyền xem lịch hẹn này', 'error')
+        return redirect(url_for('home'))
+
+    return render_template('appointment_detail.html', appointment=appointment)
+
+
+@app.route('/my_appointments')
+@login_required
+def my_appointments():
+    if current_user.role == RoleEnum.PATIENT:
+        appointments = dao_appointment.get_patient_appointments(current_user.user_id)
+        template = 'patient_appointments.html'
+    elif current_user.role == RoleEnum.DOCTOR:
+        appointments = dao_appointment.get_doctor_appointments(current_user.user_id)
+        template = 'doctor_appointments.html'
+    else:
+        flash('Chức năng này chỉ dành cho bệnh nhân và bác sĩ', 'error')
+        return redirect(url_for('home'))
+
+    return render_template(template, appointments=appointments)
+
+
+@app.route('/cancel_appointment/<int:appointment_id>', methods=['POST'])
+@login_required
+def cancel_appointment(appointment_id):
+    appointment = dao_appointment.get_appointment_by_id(appointment_id)
+
+    if not appointment:
+        flash('Lịch hẹn không tồn tại', 'error')
+        return redirect(url_for('my_appointments'))
+
+    # Kiểm tra quyền
+    if appointment.patient_id != current_user.user_id:
+        flash('Bạn không có quyền hủy lịch hẹn này', 'error')
+        return redirect(url_for('my_appointments'))
+
+    reason = request.form.get('reason', '')
+    success, message = dao_appointment.cancel_appointment(
+        appointment_id, reason, cancelled_by_patient=(appointment.patient_id == current_user.user_id)
+    )
+
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'error')
+
+    return redirect(url_for('appointment_detail', appointment_id=appointment_id))
+
+
+@app.route('/complete_appointment/<int:appointment_id>', methods=['POST'])
+@login_required
+@role_only([RoleEnum.DOCTOR])
+def complete_appointment(appointment_id):
+    appointment = dao_appointment.get_appointment_by_id(appointment_id)
+
+    if not appointment:
+        flash('Lịch hẹn không tồn tại', 'error')
+        return redirect(url_for('my_appointments'))
+
+    # Kiểm tra quyền - chỉ bác sĩ của lịch hẹn mới được đánh dấu hoàn thành
+    if appointment.doctor_id != current_user.user_id:
+        flash('Bạn không có quyền thực hiện thao tác này', 'error')
+        return redirect(url_for('my_appointments'))
+
+    success, message = dao_appointment.complete_appointment(appointment_id)
+
+    if success:
+        flash(message, 'success')
+    else:
+        flash(message, 'error')
+
+    return redirect(url_for('appointment_detail', appointment_id=appointment_id))

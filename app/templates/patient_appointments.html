@@ -1,0 +1,54 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Lịch hẹn của tôi</h2>
+
+    {% if appointments %}
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Mã lịch hẹn</th>
+                    <th>Bác sĩ</th>
+                    <th>Chuyên khoa</th>
+                    <th>Ngày giờ</th>
+                    <th>Hình thức</th>
+                    <th>Trạng thái</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in appointments %}
+                <tr>
+                    <td>#{{ appointment.appointment_id }}</td>
+                    <td>Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}</td>
+                    <td>{{ appointment.doctor.specialty.name }}</td>
+                    <td>{{ appointment.appointment_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                    <td>{{ appointment.consultation_type.value }}</td>
+                    <td>
+                        <span class="badge bg-{% if appointment.status.value == 'Scheduled' %}primary
+                                             {% elif appointment.status.value == 'Completed' %}success
+                                             {% elif 'Cancelled' in appointment.status.value %}danger
+                                             {% else %}warning{% endif %}">
+                            {{ appointment.status.value }}
+                        </span>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('appointment_detail', appointment_id=appointment.appointment_id) }}"
+                           class="btn btn-sm btn-info">Xem chi tiết</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle me-2"></i>
+        Bạn chưa có lịch hẹn nào.
+        <a href="{{ url_for('available_slots') }}" class="alert-link">Đặt lịch ngay</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

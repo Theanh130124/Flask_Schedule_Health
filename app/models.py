@@ -11,11 +11,11 @@ from flask_sqlalchemy import SQLAlchemy
 class BaseModel(db.Model):
     __abstract__ = True  # Không tạo bảng riêng
 
-    created_at = db.Column(db.DateTime, default=datetime.now())
+    created_at = db.Column(db.DateTime, default=datetime.now)
     updated_at = db.Column(
         db.DateTime,
-        default=datetime.now(),
-        onupdate=datetime.now()
+        default=datetime.now,
+        onupdate=datetime.now
     )
 
 class DayOfWeekEnum(enum.Enum):
@@ -184,10 +184,9 @@ class DoctorAvailability(BaseModel):
         nullable=False
     )
     day_of_week = db.Column(db.Enum(DayOfWeekEnum), nullable=False)
+    is_available = db.Column(db.Boolean, default=True)
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
-    is_available = db.Column(db.Boolean, default=True)
-
     # Đảm bảo mỗi bác sĩ chỉ có một thiết lập cho mỗi ngày trong tuần
     __table_args__ = (
         db.UniqueConstraint('doctor_id', 'day_of_week', name='unique_doctor_day'),
@@ -204,10 +203,11 @@ class AvailableSlot(BaseModel):
         nullable=False
     )
     slot_date = db.Column(db.Date, nullable=False)
+    is_booked = db.Column(db.Boolean, default=False)
     start_time = db.Column(db.Time, nullable=False)
     end_time = db.Column(db.Time, nullable=False)
-    is_booked = db.Column(db.Boolean, default=False)
 
+    doctor = db.relationship('Doctor', backref='available_slots', lazy=True)
     # Để tối ưu hiệu suất truy vấn
     __table_args__ = (
         db.Index('idx_doctor_date', 'doctor_id', 'slot_date'),
@@ -318,7 +318,7 @@ class Payment(db.Model):
     payment_method = db.Column(db.Enum(PaymentMethodEnum), nullable=False)
     transaction_id = db.Column(db.String(255), unique=True)
     status = db.Column(db.Enum(PaymentStatus), default=PaymentStatus.Pending)
-    payment_date = db.Column(db.DateTime, default=datetime.now())
+    payment_date = db.Column(db.DateTime, default=datetime.now)
     notes = db.Column(db.Text)
 
 
