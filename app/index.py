@@ -34,11 +34,17 @@ app.add_url_rule("/callback" , 'oauth_callback', controllers.oauth_callback)
 app.add_url_rule("/register", "register", controllers.register, methods=['GET', 'POST'])
 app.add_url_rule("/create_schedule", "create_schedule", controllers.create_schedule, methods=['GET', 'POST'])
 app.add_url_rule("/view_schedule", "view_schedule", controllers.view_schedule, methods=['GET'])
+app.add_url_rule("/availableslot", "available_slots", controllers.available_slots)
+app.add_url_rule("/book_appointment/<int:slot_id>", "book_appointment", controllers.book_appointment, methods=['GET', 'POST'])
+app.add_url_rule("/appointment/<int:appointment_id>", "appointment_detail", controllers.appointment_detail)
+app.add_url_rule("/my_appointments", "my_appointments", controllers.my_appointments)
+app.add_url_rule("/cancel_appointment/<int:appointment_id>", "cancel_appointment", controllers.cancel_appointment, methods=['POST'])
+app.add_url_rule("/complete_appointment/<int:appointment_id>", "complete_appointment", controllers.complete_appointment, methods=['POST'])
 
 if __name__ == '__main__':
 
-    with app.app_context():
-        db.create_all()   # Tạo tất cả bảng trong database
+    # with app.app_context():
+#     db.create_all()   # Tạo tất cả bảng trong database
 
  # Nua push len nho chay 5000 nha
-app.run(host="localhost", port=5000, debug=True)
+    app.run(host="localhost", port=5000, debug=True)

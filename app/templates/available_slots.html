@@ -1,0 +1,117 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Đặt lịch khám</h2>
+    
+    <!-- Form lọc -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Tìm kiếm lịch khả dụng</h5>
+        </div>
+        <div class="card-body">
+            <form method="get" action="{{ url_for('available_slots') }}">
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        <label for="hospital" class="form-label">Bệnh viện</label>
+                        <select class="form-select" id="hospital" name="hospital_id">
+                            <option value="">Tất cả bệnh viện</option>
+                            {% for hospital in hospitals %}
+                            <option value="{{ hospital.hospital_id }}" 
+                                    {% if selected_hospital == hospital.hospital_id %}selected{% endif %}>
+                                {{ hospital.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <label for="specialty" class="form-label">Chuyên khoa</label>
+                        <select class="form-select" id="specialty" name="specialty_id">
+                            <option value="">Tất cả chuyên khoa</option>
+                            {% for specialty in specialties %}
+                            <option value="{{ specialty.specialty_id }}" 
+                                    {% if selected_specialty == specialty.specialty_id %}selected{% endif %}>
+                                {{ specialty.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-3 mb-3">
+                        <label for="date" class="form-label">Ngày khám</label>
+                        <input type="date" class="form-control" id="date" name="date" 
+                               value="{{ selected_date if selected_date else '' }}"
+                               min="{{ current_date }}">
+                    </div>
+                    
+                    <div class="col-md-3 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2">Tìm kiếm</button>
+                        <a href="{{ url_for('available_slots') }}" class="btn btn-secondary">Xóa lọc</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Danh sách slot khả dụng -->
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0">Lịch khám khả dụng</h5>
+        </div>
+        <div class="card-body">
+           {% if available_slots %}
+            <div class="row">
+                {% for slot in available_slots %}
+                <div class="col-md-6 col-lg-4 mb-4">
+                    <div class="card h-100">
+                        <div class="card-body">
+                            <h5 class="card-title">Dr. {{ slot.doctor.user.first_name }} {{ slot.doctor.user.last_name }}</h5>
+                            <h6 class="card-subtitle mb-2 text-muted">{{ slot.doctor.specialty.name }}</h6>
+
+                            <div class="mb-2">
+                                <strong>Bệnh viện:</strong> {{ slot.doctor.hospital.name }}
+                            </div>
+
+                            <div class="mb-2">
+                                <strong>Địa chỉ:</strong> {{ slot.doctor.hospital.address }}
+                            </div>
+
+                            <div class="mb-2">
+                                <strong>Ngày:</strong> {{ slot.slot_date.strftime('%d/%m/%Y') }}
+                            </div>
+
+                            <div class="mb-2">
+                                <strong>Giờ:</strong> {{ slot.start_time.strftime('%H:%M') }} - {{ slot.end_time.strftime('%H:%M') }}
+                            </div>
+
+                            <div class="mb-3">
+                                <strong>Phí khám:</strong>
+                                <span class="text-primary fw-bold">{{ "{:,.0f} VNĐ".format(slot.doctor.consultation_fee) }}</span>
+                            </div>
+
+                            <a href="{{ url_for('book_appointment', slot_id=slot.slot_id) }}"
+                               class="btn btn-success w-100">Đặt lịch ngay</a>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                Hiện không có lịch khám nào khả dụng với tiêu chí tìm kiếm của bạn.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+// Set min date cho input date là ngày hiện tại
+document.addEventListener('DOMContentLoaded', function() {
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('date').setAttribute('min', today);
+});
+</script>
+{% endblock %}
