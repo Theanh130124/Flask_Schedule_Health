@@ -20,6 +20,7 @@ from app.models import Hospital, Specialty, User, Doctor, RoleEnum
 from app.form import LoginForm, RegisterForm
 from app.dao import dao_authen, dao_user, dao_search
 from app.models import User
+from datetime import date
 
 
 
@@ -214,4 +215,75 @@ def register():
             mse = "Tên đăng nhập hoặc email đã tồn tại!"
 
     return render_template("register.html", form=form, mse=mse)
+
+@app.route("/patients/search")
+@login_required
+def patient_search():
+
+    return render_template("patient_search.html")
+
+@app.route("/api/patients")
+@login_required
+def api_patients():
+    """
+    API trả về danh sách bệnh nhân theo từng filter (search + lọc ).
+    Dùng cho giao diện Patient Search (Bootstrap/React).
+    """
+    # Query string từ URL
+    q = (request.args.get("q", "") or "").strip()
+    phone = (request.args.get("phone", "") or "").strip()
+    active = request.args.get("active")  # "1", "0" hoặc None
+    inactive = request.args.get("inactive")
+    page = int(request.args.get("page", 1))
+    per_page = int(request.args.get("per_page", 50))
+
+    query = User.query.filter(User.role == RoleEnum.PATIENT)
+
+    # Lọc theo từ khóa
+    if q:
+        query = query.filter(
+            (User.first_name.ilike(f"%{q}%")) |
+            (User.last_name.ilike(f"%{q}%")) |
+            (User.username.ilike(f"%{q}%")) |
+            (User.email.ilike(f"%{q}%")) |
+            (User.phone_number.ilike(f"%{q}%"))
+        )
+
+    # Lọc theo trạng thái
+    if active == "1" and inactive != "1":
+        query = query.filter(User.is_active == True)
+    elif inactive == "1" and active != "1":
+        query = query.filter(User.is_active == False)
+    # lọc theo số điện thoại
+    if phone:
+        query = query.filter(User.phone_number.ilike(f"%{phone}%"))
+
+    # Phân trang
+    patients = (query.order_by(User.last_name.asc(), User.first_name.asc())
+                     .offset((page - 1) * per_page)
+                     .limit(per_page)
+                     .all())
+
+    # Trả JSON
+    return jsonify([
+        {
+            "id": u.user_id,
+            "name": f"{u.first_name} {u.last_name}",
+            "age": u.get_age() if hasattr(u, "get_age") else None,
+            "gender": u.gender.name if u.gender else None,
+            "contact": u.phone_number,
+            "last_visit_date": u.last_visit_date.strftime("%Y-%m-%d") if getattr(u, "last_visit_date", None) else None
+        }
+        for u in patients
+    ])
+
+# chi tiết sổ tay khám bệnh của patient
+@app.route("/patients/<int:patient_id>")
+@login_required
+def patient_detail(patient_id):
+    """
+    Xem chi tiết 1 bệnh nhân (theo ID).
+    """
+    patient = User.query.filter_by(user_id=patient_id, role=RoleEnum.PATIENT).first_or_404()
+    return render_template("patient_detail.html", patient=patient)
 

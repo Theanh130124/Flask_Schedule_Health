@@ -5,7 +5,7 @@ from flask_login import UserMixin
 
 from app.extensions import db
 from flask_sqlalchemy import SQLAlchemy
-
+from datetime import date
 
 # Base Model`
 class BaseModel(db.Model):
@@ -310,3 +310,11 @@ class Review(BaseModel):
     appointment = db.relationship('Appointment')
     patient = db.relationship('Patient')
     doctor = db.relationship('Doctor')
+
+def get_age(self):
+    if self.date_of_birth:
+        today = date.today()
+        return today.year - self.date_of_birth.year - (
+                (today.month, today.day) < (self.date_of_birth.month, self.date_of_birth.day)
+        )
+    return None
