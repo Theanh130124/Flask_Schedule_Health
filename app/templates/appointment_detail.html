@@ -1,0 +1,122 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">Chi tiết lịch hẹn #{{ appointment.appointment_id }}</h4>
+                    <span class="badge bg-{% if appointment.status.value == 'Scheduled' %}primary
+                                         {% elif appointment.status.value == 'Completed' %}success
+                                         {% elif 'Cancelled' in appointment.status.value %}danger
+                                         {% else %}warning{% endif %}">
+                        {{ appointment.status.value }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Thông tin bác sĩ</h5>
+                            <p><strong>Bác sĩ:</strong> Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}</p>
+                            <p><strong>Chuyên khoa:</strong> {{ appointment.doctor.specialty.name }}</p>
+                            <p><strong>Bệnh viện:</strong> {{ appointment.doctor.hospital.name }}</p>
+                            <p><strong>Địa chỉ:</strong> {{ appointment.doctor.hospital.address }}</p>
+                            <p><strong>Số điện thoại:</strong> {{ appointment.doctor.hospital.phone_number }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Thông tin lịch hẹn</h5>
+                            <p><strong>Ngày giờ:</strong> {{ appointment.appointment_time.strftime('%d/%m/%Y %H:%M') }}</p>
+                            <p><strong>Thời lượng:</strong> {{ appointment.duration_minutes }} phút</p>
+                            <p><strong>Hình thức:</strong> {{ appointment.consultation_type.value }}</p>
+                            <p><strong>Lý do khám:</strong> {{ appointment.reason or 'Không có thông tin' }}</p>
+                            <p><strong>Trạng thái:</strong> {{ appointment.status.value }}</p>
+                        </div>
+                    </div>
+
+                    {% if appointment.invoice %}
+                    <div class="mb-4">
+                        <h5>Thông tin thanh toán</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Số hóa đơn:</strong> #{{ appointment.invoice.invoice_id }}</p>
+                                <p><strong>Số tiền:</strong> {{ "{:,.0f} VNĐ".format(appointment.invoice.amount) }}</p>
+                                <p><strong>Ngày tạo:</strong> {{ appointment.invoice.issue_date.strftime('%d/%m/%Y %H:%M') }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Hạn thanh toán:</strong> {{ appointment.invoice.due_date.strftime('%d/%m/%Y') if appointment.invoice.due_date else 'Không có' }}</p>
+                                <p><strong>Trạng thái:</strong>
+                                    <span class="badge bg-{% if appointment.invoice.status.value == 'Paid' %}success
+                                                         {% elif appointment.invoice.status.value == 'Pending' %}warning
+                                                         {% else %}danger{% endif %}">
+                                        {{ appointment.invoice.status.value }}
+                                    </span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if appointment.cancellation_reason %}
+                    <div class="mb-4">
+                        <h5>Lý do hủy</h5>
+                        <p class="text-danger">{{ appointment.cancellation_reason }}</p>
+                    </div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('my_appointments') }}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left me-2"></i>Quay lại
+                        </a>
+
+                        {% if appointment.status.value == 'Scheduled' and current_user.role.name == 'PATIENT' %}
+                        <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                            <i class="fas fa-times me-2"></i>Hủy lịch hẹn
+                        </button>
+                        {% endif %}
+
+                        {% if current_user.role.name == 'DOCTOR' and appointment.status.value == 'Scheduled' %}
+                        <form method="POST" action="{{ url_for('complete_appointment', appointment_id=appointment.appointment_id) }}">
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check me-2"></i>Đánh dấu hoàn thành
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancel Modal -->
+{% if appointment.status.value == 'Scheduled' and current_user.role.name == 'PATIENT' %}
+<div class="modal fade" id="cancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Hủy lịch hẹn</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('cancel_appointment', appointment_id=appointment.appointment_id) }}">
+                <div class="modal-body">
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Bạn có chắc chắn muốn hủy lịch hẹn này?
+                    </div>
+                    <div class="mb-3">
+                        <label for="cancel_reason" class="form-label">Lý do hủy <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="cancel_reason" name="reason" rows="3" required
+                                  placeholder="Vui lòng nhập lý do hủy lịch hẹn..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="submit" class="btn btn-danger">Xác nhận hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
