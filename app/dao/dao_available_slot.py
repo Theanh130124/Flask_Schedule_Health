@@ -1,6 +1,7 @@
 from datetime import datetime
 from app.models import AvailableSlot, Doctor, User, Hospital, Specialty
 from app.extensions import db
+from sqlalchemy import desc
 
 
 #Lấy tất cả slot khả dụng với thời gian lớn hơn hiện tại
@@ -20,7 +21,7 @@ def get_available_slots():
         ((AvailableSlot.slot_date == current_date) &
          (AvailableSlot.start_time > current_time))
     )
-                       .order_by(AvailableSlot.slot_date, AvailableSlot.start_time)
+                       .order_by(desc(AvailableSlot.slot_date), AvailableSlot.start_time)  # <--- thay đổi ở đây
                        .all())
 
     return available_slots
@@ -49,7 +50,7 @@ def get_available_slots_by_filters(hospital_id=None, specialty_id=None, doctor_i
     if date:
         query = query.filter(AvailableSlot.slot_date == date)
 
-    return query.order_by(AvailableSlot.slot_date, AvailableSlot.start_time).all()
+    return query.order_by(desc(AvailableSlot.slot_date), desc(AvailableSlot.start_time))
 
 
 def get_available_slots_by_filters_paginated(hospital_id=None, specialty_id=None, doctor_id=None, date=None, page=1,
@@ -80,7 +81,7 @@ def get_available_slots_by_filters_paginated(hospital_id=None, specialty_id=None
         query = query.filter(AvailableSlot.slot_date == date)
 
     # Phân trang
-    return query.order_by(AvailableSlot.slot_date, AvailableSlot.start_time) \
+    return query.order_by(desc(AvailableSlot.slot_date), desc(AvailableSlot.start_time)) \
         .offset((page - 1) * per_page) \
         .limit(per_page) \
         .all()

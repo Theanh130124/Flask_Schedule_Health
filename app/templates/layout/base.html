@@ -66,10 +66,25 @@
   <body>
     <!-- {#header#} -->
     {% block header %} {% include 'layout/header.html' %} {% endblock %}
-
+  {% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="toast-container position-fixed top-0 end-0 p-3">
+      {% for category, message in messages %}
+      <div class="toast align-items-center text-white bg-{{ 'danger' if category == 'danger' else 'success' }} border-0 mb-2"
+           role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="3000">
+        <div class="d-flex">
+          <div class="toast-body">{{ message }}</div>
+          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
 
     <!-- {#nav-content#} -->
     {% block nav_content %}
+
     <div class="container-fluid">
       <div class="row flex-nowrap" style="color: #000">
         <div class="col-auto col-md-3 col-xl-2 header">
@@ -195,6 +210,13 @@
           // Reset form
           document.getElementById("accountForm").reset();
       }
+        document.addEventListener("DOMContentLoaded", function(){
+    var toastElList = [].slice.call(document.querySelectorAll('.toast'))
+    toastElList.map(function (toastEl) {
+      var toast = new bootstrap.Toast(toastEl)
+      toast.show()
+    })
+  });
     </script>
   </body>
 </html>

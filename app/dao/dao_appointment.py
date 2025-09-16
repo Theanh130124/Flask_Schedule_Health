@@ -8,13 +8,13 @@ from datetime import datetime
 #Đặt lịch
 def book_appointment(patient_id, slot_id, reason, consultation_type=ConsultationType.Offline):
     try:
-        # Lấy thông tin slot
         slot = AvailableSlot.query.get(slot_id)
         if not slot:
             return None, "Slot không tồn tại"
 
         if slot.is_booked:
             return None, "Slot đã được đặt"
+
         # Tạo appointment
         appointment = Appointment(
             patient_id=patient_id,
@@ -24,11 +24,11 @@ def book_appointment(patient_id, slot_id, reason, consultation_type=Consultation
                              (slot.start_time.hour * 60 + slot.start_time.minute),
             reason=reason,
             consultation_type=consultation_type,
-            status=AppointmentStatus.Scheduled,
-            slot_id=slot_id  # Lưu tham chiếu đến slot
+            status=AppointmentStatus.Scheduled
         )
         db.session.add(appointment)
-        db.session.flush()  # Lấy ID của appointment
+        db.session.flush()
+
         # Tạo invoice
         invoice = Invoice(
             appointment_id=appointment.appointment_id,
@@ -38,6 +38,7 @@ def book_appointment(patient_id, slot_id, reason, consultation_type=Consultation
             status=InvoiceStatus.Pending
         )
         db.session.add(invoice)
+
         # Đánh dấu slot đã được đặt
         slot.is_booked = True
         db.session.commit()
@@ -68,19 +69,33 @@ def cancel_appointment(appointment_id, reason, cancelled_by_patient=True):
         if not appointment:
             return False, "Lịch hẹn không tồn tại"
 
-        # Kiểm tra thời gian hủy (trước 24 giờ)
+        # Kiểm tra thời gian hủy (trước 24 giờ so với giờ hẹn)
         current_time = datetime.now()
         appointment_time = appointment.appointment_time
         time_difference = appointment_time - current_time
 
+        # Nếu thời gian từ hiện tại đến cuộc hẹn ít hơn 24 giờ
         if time_difference.total_seconds() < 24 * 3600:
             return False, "Chỉ có thể hủy lịch hẹn trước 24 giờ"
 
-        # Tìm và cập nhật slot thông qua slot_id đã lưu
-        if appointment.slot_id:
-            slot = AvailableSlot.query.get(appointment.slot_id)
-            if slot:
-                slot.is_booked = False
+        # QUAN TRỌNG: Tìm slot dựa trên thời gian và bác sĩ
+        slot_date = appointment.appointment_time.date()
+        start_time = appointment.appointment_time.time()
+
+        # Tìm slot khớp với thông tin appointment
+        slot = AvailableSlot.query.filter_by(
+            doctor_id=appointment.doctor_id,
+            slot_date=slot_date,
+            start_time=start_time,
+            is_booked=True  # Chỉ tìm những slot đã được đặt
+        ).first()
+
+        if slot:
+            slot.is_booked = False  # Đặt lại trạng thái slot về chưa đặt
+            db.session.add(slot)
+            slot_found = True
+        else:
+            slot_found = False
 
         # Cập nhật trạng thái appointment
         if cancelled_by_patient:
@@ -90,12 +105,16 @@ def cancel_appointment(appointment_id, reason, cancelled_by_patient=True):
 
         appointment.cancellation_reason = reason
 
-        # Cập nhật invoice status
+        # Cập nhật invoice status nếu có
         if appointment.invoice:
             appointment.invoice.status = InvoiceStatus.Cancelled
 
         db.session.commit()
-        return True, "Hủy lịch hẹn thành công và slot đã được mở lại"
+
+        if slot_found:
+            return True, "Hủy lịch hẹn thành công và slot đã được mở lại"
+        else:
+            return True, "Hủy lịch hẹn thành công (không tìm thấy slot liên quan)"
 
     except Exception as e:
         db.session.rollback()
@@ -114,3 +133,61 @@ def complete_appointment(appointment_id):
     except Exception as e:
         db.session.rollback()
         return False, f"Lỗi khi cập nhật trạng thái: {str(e)}"
+
+
+def reschedule_appointment(appointment_id, new_slot_id, reason=None):
+    try:
+        appointment = Appointment.query.get(appointment_id)
+        if not appointment:
+            return False, "Lịch hẹn không tồn tại"
+
+        # Kiểm tra thời gian sửa (trước 24 giờ so với giờ hẹn)
+        current_time = datetime.now()
+        appointment_time = appointment.appointment_time
+        time_difference = appointment_time - current_time
+
+        # Nếu thời gian từ hiện tại đến cuộc hẹn ít hơn 24 giờ
+        if time_difference.total_seconds() < 24 * 3600:
+            return False, "Chỉ có thể sửa lịch hẹn trước 24 giờ"
+
+        # Kiểm tra slot mới
+        new_slot = AvailableSlot.query.get(new_slot_id)
+        if not new_slot:
+            return False, "Slot mới không tồn tại"
+
+        if new_slot.is_booked:
+            return False, "Slot mới đã được đặt"
+
+        # Tìm slot cũ dựa trên thời gian và bác sĩ
+        old_slot_date = appointment.appointment_time.date()
+        old_start_time = appointment.appointment_time.time()
+
+        # Tìm slot cũ khớp với thông tin appointment
+        old_slot = AvailableSlot.query.filter_by(
+            doctor_id=appointment.doctor_id,
+            slot_date=old_slot_date,
+            start_time=old_start_time,
+            is_booked=True
+        ).first()
+
+        # Cập nhật thông tin appointment
+        appointment.doctor_id = new_slot.doctor_id
+        appointment.appointment_time = datetime.combine(new_slot.slot_date, new_slot.start_time)
+        appointment.duration_minutes = (new_slot.end_time.hour * 60 + new_slot.end_time.minute) - \
+                                       (new_slot.start_time.hour * 60 + new_slot.start_time.minute)
+
+        if reason:
+            appointment.reason = reason
+
+        # Cập nhật trạng thái slot
+        if old_slot:
+            old_slot.is_booked = False  # Mở lại slot cũ
+
+        new_slot.is_booked = True  # Đặt slot mới
+
+        db.session.commit()
+        return True, "Sửa lịch hẹn thành công"
+
+    except Exception as e:
+        db.session.rollback()
+        return False, f"Lỗi khi sửa lịch hẹn: {str(e)}"

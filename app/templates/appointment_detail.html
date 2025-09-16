@@ -69,7 +69,13 @@
                             <i class="fas fa-arrow-left me-2"></i>Quay lại
                         </a>
 
+
                         {% if appointment.status.value == 'Scheduled' and current_user.role.name == 'PATIENT' %}
+                        <!-- Nút sửa lịch hẹn -->
+                        <a href="{{ url_for('reschedule_appointment', appointment_id=appointment.appointment_id) }}" class="btn btn-warning">
+                            <i class="fas fa-edit me-2"></i>Sửa lịch hẹn
+                        </a>
+
                         <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
                             <i class="fas fa-times me-2"></i>Hủy lịch hẹn
                         </button>
@@ -82,6 +88,17 @@
                             </button>
                         </form>
                         {% endif %}
+
+
+                        {% if appointment.slot %}
+                    <p><strong>Slot:</strong> {{ appointment.slot.slot_date.strftime('%d/%m/%Y') }}
+                       {{ appointment.slot.start_time.strftime('%H:%M') }} - {{ appointment.slot.end_time.strftime('%H:%M') }}</p>
+                    <p><strong>Trạng thái slot:</strong>
+                       <span class="badge bg-{% if appointment.slot.is_booked %}danger{% else %}success{% endif %}">
+                           {% if appointment.slot.is_booked %}Đã đặt{% else %}Có sẵn{% endif %}
+                       </span>
+                    </p>
+                    {% endif %}
                     </div>
                 </div>
             </div>
