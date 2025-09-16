@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime , date
-
+from math import ceil
 from flask_login import current_user, login_required, logout_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import flash
@@ -298,6 +298,8 @@ def available_slots():
     specialty_id = request.args.get('specialty_id', type=int)
     doctor_id = request.args.get('doctor_id', type=int)
     date_str = request.args.get('date')
+    page = request.args.get('page', 1, type=int)  # Thêm phân trang
+    per_page = 6  # Số slot mỗi trang (phù hợp với layout 2-3 cột)
 
     date_filter = None
     if date_str:
@@ -306,8 +308,18 @@ def available_slots():
         except ValueError:
             pass
 
-    # Lấy danh sách slot khả dụng với bộ lọc
-    available_slots = dao_available_slot.get_available_slots_by_filters(
+    # Lấy danh sách slot khả dụng với bộ lọc (cập nhật hàm DAO)
+    available_slots = dao_available_slot.get_available_slots_by_filters_paginated(
+        hospital_id=hospital_id,
+        specialty_id=specialty_id,
+        doctor_id=doctor_id,
+        date=date_filter,
+        page=page,
+        per_page=per_page
+    )
+
+    # Lấy tổng số slot để tính toán phân trang
+    total_slots = dao_available_slot.count_available_slots_by_filters(
         hospital_id=hospital_id,
         specialty_id=specialty_id,
         doctor_id=doctor_id,
@@ -321,6 +333,8 @@ def available_slots():
     # Lấy ngày hiện tại để set min date cho input
     current_date = date.today().strftime('%Y-%m-%d')
 
+    total_pages = ceil(total_slots / per_page) if total_slots > 0 else 1
+
     return render_template('available_slots.html',
                            available_slots=available_slots,
                            hospitals=hospitals,
@@ -329,8 +343,10 @@ def available_slots():
                            selected_specialty=specialty_id,
                            selected_doctor=doctor_id,
                            selected_date=date_str,
-                           current_date=current_date)  # Thêm current_date vào context
-
+                           current_date=current_date,
+                           current_page=page,
+                           total_pages=total_pages,
+                           total_slots=total_slots)
 
 @app.route('/book_appointment/<int:slot_id>', methods=['GET', 'POST'])
 @login_required
