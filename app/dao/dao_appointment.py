@@ -24,7 +24,8 @@ def book_appointment(patient_id, slot_id, reason, consultation_type=Consultation
                              (slot.start_time.hour * 60 + slot.start_time.minute),
             reason=reason,
             consultation_type=consultation_type,
-            status=AppointmentStatus.Scheduled
+            status=AppointmentStatus.Scheduled,
+            slot_id=slot_id  # Lưu tham chiếu đến slot
         )
         db.session.add(appointment)
         db.session.flush()  # Lấy ID của appointment
@@ -62,13 +63,26 @@ def get_doctor_appointments(doctor_id):
 
 #Hủy lịch
 def cancel_appointment(appointment_id, reason, cancelled_by_patient=True):
-
     try:
         appointment = Appointment.query.get(appointment_id)
         if not appointment:
             return False, "Lịch hẹn không tồn tại"
 
-        # Cập nhật trạng thái
+        # Kiểm tra thời gian hủy (trước 24 giờ)
+        current_time = datetime.now()
+        appointment_time = appointment.appointment_time
+        time_difference = appointment_time - current_time
+
+        if time_difference.total_seconds() < 24 * 3600:
+            return False, "Chỉ có thể hủy lịch hẹn trước 24 giờ"
+
+        # Tìm và cập nhật slot thông qua slot_id đã lưu
+        if appointment.slot_id:
+            slot = AvailableSlot.query.get(appointment.slot_id)
+            if slot:
+                slot.is_booked = False
+
+        # Cập nhật trạng thái appointment
         if cancelled_by_patient:
             appointment.status = AppointmentStatus.CancelledByPatient
         else:
@@ -81,12 +95,11 @@ def cancel_appointment(appointment_id, reason, cancelled_by_patient=True):
             appointment.invoice.status = InvoiceStatus.Cancelled
 
         db.session.commit()
-        return True, "Hủy lịch hẹn thành công"
+        return True, "Hủy lịch hẹn thành công và slot đã được mở lại"
 
     except Exception as e:
         db.session.rollback()
         return False, f"Lỗi khi hủy lịch hẹn: {str(e)}"
-
 
 def complete_appointment(appointment_id):
     try:
