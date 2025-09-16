@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Hồ sơ bệnh nhân</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <style>
+    .card {
+      margin-bottom: 20px;
+    }
+    .label {
+      font-weight: bold;
+      display: inline-block;
+      min-width: 180px;
+    }
+    .status-completed {
+      background-color: #d4edda;
+      color: #155724;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 0.9rem;
+    }
+    .status-scheduled {
+      background-color: #d1ecf1;
+      color: #0c5460;
+      padding: 3px 8px;
+      border-radius: 5px;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body class="container my-4">
+
+  <!-- Tiêu đề -->
+  <div class="card p-3">
+    <h5>
+      Hồ sơ bệnh nhân - {{ user.first_name }} {{ user.last_name }}
+    </h5>
+  </div>
+
+  <!-- Thông tin cá nhân -->
+  <div class="card p-3">
+    <h6>Thông tin cá nhân</h6>
+    <div><span class="label">Họ và tên:</span> {{ user.first_name }} {{ user.last_name }}</div>
+    <div><span class="label">Giới tính:</span> {{ user.gender.name if user.gender else "" }}</div>
+    <div><span class="label">Ngày sinh:</span> {{ user.date_of_birth }}</div>
+    <div><span class="label">Tuổi:</span> {{ user.get_age() if user.get_age else "" }}</div>
+  </div>
+
+  <!-- Liên hệ & người thân -->
+  <div class="card p-3">
+    <h6>Thông tin liên hệ</h6>
+    <div><span class="label">Số điện thoại:</span> {{ user.phone_number }}</div>
+    <div><span class="label">Email:</span> {{ user.email }}</div>
+    <div><span class="label">Địa chỉ:</span> {{ user.address }}</div>
+  </div>
+
+  <!-- Lịch khám bệnh -->
+<div class="card p-3">
+  <div class="d-flex justify-content-between align-items-center">
+    <h6>Lịch khám bệnh</h6>
+    <a href="/patients/{{ user.user_id }}/appointments" class="btn btn-sm btn-outline-dark">Xem tất cả</a>
+  </div>
+  <table class="table table-sm mt-2">
+    <thead>
+      <tr>
+        <th>Ngày khám</th>
+        <th>Bác sĩ</th>
+        <th>Trạng thái</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for a in appointments %}
+      <tr>
+        <td>{{ a.appointment_time.strftime("%Y-%m-%d %H:%M") }}</td>
+        <td>{{ a.doctor.first_name }} {{ a.doctor.last_name }}</td>
+        <td>{{ a.status.value if a.status else "" }}</td>
+        <td>
+          <a href="/appointments/{{ a.appointment_id }}" class="btn btn-sm btn-primary">Chi tiết</a>
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="4" class="text-center text-muted">Chưa có lịch khám nào</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+
+
+  <!-- Bảo hiểm -->
+  <div class="card p-3">
+    <h6>Thông tin bảo hiểm</h6>
+    <div><span class="label">Mã BHYT / Số CMND:</span> {{ user.patient.insurance_number or "" }}</div>
+  </div>
+
+</body>
+</html>

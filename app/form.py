@@ -79,3 +79,38 @@ class RegisterForm(FlaskForm):
     )
 
     submit = SubmitField("Đăng ký")
+# User -- những thông tin thường sử dụng và thay đổi
+
+class BaseUserForm(FlaskForm):
+    first_name = StringField(
+        "Họ", validators=[DataRequired(), Length(min=1, max=100)]
+    )
+    last_name = StringField(
+        "Tên", validators=[DataRequired(), Length(min=1, max=100)]
+    )
+    phone_number = StringField(
+        "Số điện thoại",
+        validators=[DataRequired(), Length(min=8, max=20)]
+    )
+    address = StringField(
+        "Địa chỉ", validators=[DataRequired(), Length(min=3, max=500)]
+    )
+    date_of_birth = DateField(
+        "Ngày sinh", format="%Y-%m-%d", validators=[Optional()]
+    )
+    gender = SelectField(
+        "Giới tính",
+        choices=[("MALE", "Nam"), ("FEMALE", "Nữ"), ("OTHER", "Khác")],
+        validators=[Optional()]
+    )
+
+
+class PatientUpdateForm(BaseUserForm):
+    medical_history_summary = StringField(
+        "Tiền sử bệnh án",
+        validators=[Optional(), Length(max=500)],
+        render_kw={"placeholder": "Ví dụ: Bệnh tim, tiểu đường..."}
+    )
+
+
+    submit = SubmitField("Cập nhật")
