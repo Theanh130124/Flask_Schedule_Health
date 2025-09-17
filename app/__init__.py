@@ -27,6 +27,14 @@ app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS') == 'True'
 app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
 
+
+# Thêm vào các config khác
+app.config['VNPAY_TMN_CODE'] = os.getenv('VNPAY_TMN_CODE')
+app.config['VNPAY_HASH_SECRET'] = os.getenv('VNPAY_HASH_SECRET')
+app.config['VNPAY_URL'] = os.getenv('VNPAY_URL', 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html')
+app.config['VNPAY_RETURN_URL'] = os.getenv('VNPAY_RETURN_URL', 'http://localhost:5000/payment/vnpay_return')
+
+
 GOOGLE_CLIENT_SECRETS_FILE = os.path.join(pathlib.Path(__file__).parent, "oauth_config.json")
 
 flow = Flow.from_client_secrets_file(
