@@ -115,3 +115,5 @@ def complete_appointment(appointment_id):
         db.session.rollback()
         return False, f"Lỗi khi cập nhật trạng thái: {str(e)}"
 
+# ------------------sử lý với role DOCTOR ---------------------
+#

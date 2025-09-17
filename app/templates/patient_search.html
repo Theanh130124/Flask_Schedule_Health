@@ -1,80 +1,54 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>Healthcare Management System</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <style>
-    .nav-tabs .nav-link.active {
-      background-color: #000;
-      color: #fff;
-    }
-    .card {
-      margin-top: 20px;
-    }
-    .table th, .table td {
-      vertical-align: middle;
-    }
-    .btn-dark {
-      background-color: #000;
-    }
-  </style>
-</head>
-<body class="container my-4">
+{# templates/patient_search.html #}
+{% extends "layout/base.html" %}
 
+{% block title %}Patient Search{% endblock %}
+
+{% block content %}
+<div class="container my-4">
   <!-- Navigation Tabs -->
   <ul class="nav nav-tabs mb-4">
-    <li class="nav-item">
-      <a class="nav-link active" href="#">Patient Search</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="#">Patient Registration</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="#">Appointment Scheduler</a>
-    </li>
-    <li class="nav-item">
-      <a class="nav-link" href="#">Masters Management</a>
-    </li>
+    <li class="nav-item"><a class="nav-link active" href="#">Patient Search</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">Patient Registration</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">Appointment Scheduler</a></li>
+    <li class="nav-item"><a class="nav-link" href="#">Masters Management</a></li>
   </ul>
 
   <!-- Patient Search Form -->
   <div class="card p-4">
-    <h5>Patient Search</h5>
+    <h5>Tìm kiếm bệnh nhân</h5>
     <div class="row mb-3">
       <div class="col-10">
         <input id="searchInput" type="text" class="form-control" placeholder="Search patients...">
       </div>
       <div class="col-2">
-        <button id="searchBtn" class="btn btn-dark w-100">Search</button>
+        <button id="searchBtn" class="btn btn-dark w-100">Tìm kiếm chung</button>
       </div>
     </div>
 
     <!-- Search Filters -->
-    <h6>Search Filters</h6>
+    <h6>Tìm kiếm</h6>
     <div class="row mb-3">
       <div class="col-md-3">
-        <input type="checkbox"> Patient ID
+        <input type="checkbox">ID
         <input type="text" class="form-control mt-1" placeholder="Enter Patient ID">
       </div>
       <div class="col-md-3">
-        <input type="checkbox"> Name
+        <input type="checkbox"> Tên
         <input type="text" class="form-control mt-1" placeholder="First/Last/Full Name">
       </div>
       <div class="col-md-3">
-        <input type="checkbox"> Date of Birth
+        <input type="checkbox"> Ngày sinh
         <input type="date" class="form-control mt-1">
       </div>
       <div class="col-md-3">
-        <input type="checkbox" id="phoneChk"> Phone Number
+        <input type="checkbox" id="phoneChk"> Số điện thoại
         <input type="text" id="phoneInput" class="form-control mt-1" placeholder="Enter phone number">
       </div>
     </div>
 
-    <!-- Filters -->
     <div class="mb-3">
-      <label class="me-2"><input type="checkbox" id="activeChk" checked> Active Patients</label>
-      <label class="me-2"><input type="checkbox" id="inactiveChk"> Inactive Patients</label>
+      <label class="me-2"><input type="checkbox" id="activeChk" checked> Hoạt động</label>
+      <label class="me-2"><input type="checkbox" id="inactiveChk"> KHông hoạt động</label>
     </div>
 
     <div class="row mb-3">
@@ -92,91 +66,105 @@
 
   <!-- Search Results -->
   <div class="card p-4 mt-4">
-    <h5>Search Results</h5>
+    <h5>Tìm kiếm bệnh nhân</h5>
     <table class="table table-bordered mt-3">
       <thead class="table-light">
         <tr>
-          <th>Patient Name</th>
-          <th>Age</th>
-          <th>Gender</th>
-          <th>Contact</th>
-          <th>Last Visit Date</th>
-          <th>Actions</th>
+          <th>Tên bệnh nhân</th>
+          <th>Tuổi</th>
+          <th>Giới tính</th>
+          <th>Số điện thoại</th>
+          <th>Lần gần nhất khám bệnh</th>
+          <th>Thao tác</th>
         </tr>
       </thead>
       <tbody id="patientTableBody">
-        <tr><td colspan="6" class="text-center">No data loaded</td></tr>
+        <tr><td colspan="6" class="text-center">Không có dữ liệu</td></tr>
       </tbody>
     </table>
 
-    <!-- Pagination -->
+    <!-- Pagination simple -->
     <nav>
-      <ul class="pagination" id="pagination">
-        <!-- sẽ được JS render -->
+      <ul class="pagination justify-content-center" id="pagination">
       </ul>
     </nav>
   </div>
+</div>
 
-  <script>
+<script>
+  (function(){
     let currentPage = 1;
     const perPage = 10;
 
-    async function loadPatients(page=1) {
+    async function loadPatients(page=1){
       const q = document.getElementById("searchInput").value.trim();
       const active = document.getElementById("activeChk").checked ? "1" : "";
       const inactive = document.getElementById("inactiveChk").checked ? "1" : "";
       const phoneChk = document.getElementById("phoneChk").checked;
       const phoneNumber = phoneChk ? document.getElementById("phoneInput").value.trim() : "";
 
-  const res = await fetch(`/api/patients?q=${q}&phone=${phoneNumber}&active=${active}&inactive=${inactive}&page=${page}&per_page=${perPage}`);
-  const data = await res.json();
-
       const tbody = document.getElementById("patientTableBody");
-      tbody.innerHTML = "";
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center">Loading...</td></tr>`;
 
-      if (data.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center">No patients found</td></tr>`;
-        return;
-      }
+      try {
+        // NOTE: your API currently returns an array (no total). We consume that.
+        const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}&phone=${encodeURIComponent(phoneNumber)}&active=${active}&inactive=${inactive}&page=${page}&per_page=${perPage}`);
+        if(!res.ok) throw new Error("Network error");
+        const data = await res.json(); // EXPECT: array of patients
 
-      data.forEach(p => {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
-          <td>${p.name}</td>
-          <td>${p.age ?? ""}</td>
-          <td>${p.gender ?? ""}</td>
-          <td>${p.contact ?? ""}</td>
-          <td>${p.last_visit_date ?? ""}</td>
-          <td><a href="/patients/${p.id}" class="btn btn-outline-dark btn-sm">👁 View Details</a></td>
+        // If your API later changes to return {patients, total}, adapt here.
+        const patients = Array.isArray(data) ? data : (data.patients || []);
+        tbody.innerHTML = "";
+
+        if (patients.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center">No patients found</td></tr>`;
+        } else {
+          patients.forEach(p => {
+            const tr = document.createElement("tr");
+            tr.innerHTML = `
+              <td>${p.name || ''}</td>
+              <td>${p.age ?? ''}</td>
+              <td>${p.gender ?? ''}</td>
+              <td>${p.contact ?? ''}</td>
+              <td>${p.last_visit_date ?? ''}</td>
+              <td>
+                <a class="btn btn-outline-dark btn-sm" href="/patients/${p.id}">👁 Chi Tiết</a>
+              </td>
+            `;
+            tbody.appendChild(tr);
+          });
+        }
+
+        // build simple prev/next pagination using returned length (we can't know total pages if backend doesn't send total)
+        const pagination = document.getElementById("pagination");
+        pagination.innerHTML = `
+          <li class="page-item ${page===1?'disabled':''}">
+            <a class="page-link" href="#" onclick="changePage(${page-1});return false;">Trang</a>
+          </li>
+          <li class="page-item active"><span class="page-link">${page}</span></li>
+          <li class="page-item ${patients.length < perPage ? 'disabled' : ''}">
+            <a class="page-link" href="#" onclick="changePage(${page+1});return false;">>></a>
+          </li>
         `;
-        tbody.appendChild(tr);
-      });
 
-      // Cập nhật pagination (demo: chỉ Next/Prev đơn giản)
-      const pagination = document.getElementById("pagination");
-      pagination.innerHTML = `
-        <li class="page-item ${page===1?'disabled':''}">
-          <a class="page-link" href="#" onclick="changePage(${page-1});return false;">Previous</a>
-        </li>
-        <li class="page-item active"><a class="page-link" href="#">${page}</a></li>
-        <li class="page-item">
-          <a class="page-link" href="#" onclick="changePage(${page+1});return false;">Next</a>
-        </li>
-      `;
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading patients: ${err.message}</td></tr>`;
+        console.error(err);
+      }
     }
 
-    function changePage(page) {
-      if (page < 1) return;
+    // expose changePage to inline onclick in pagination
+    window.changePage = function(page){
+      if(page < 1) return;
       currentPage = page;
       loadPatients(page);
     }
 
-    document.getElementById("searchBtn").addEventListener("click", ()=> loadPatients(1));
-    document.getElementById("applyFilterBtn").addEventListener("click", ()=> loadPatients(1));
-
-    // load lần đầu
-    loadPatients();
-  </script>
-
-</body>
-</html>
+    document.addEventListener("DOMContentLoaded", function(){
+      document.getElementById("searchBtn").addEventListener("click", ()=> loadPatients(1));
+      document.getElementById("applyFilterBtn").addEventListener("click", ()=> loadPatients(1));
+      loadPatients(1);
+    });
+  })();
+</script>
+{% endblock %}
