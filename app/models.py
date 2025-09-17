@@ -51,6 +51,7 @@ class AppointmentStatus(enum.Enum):
 class PaymentMethodEnum(enum.Enum):
     MoMo = "MoMo"
     ZaloPay = "ZaloPay"
+    VNPay = "VNPay"
 
 class ConsultationType(enum.Enum):
     Offline = "Offline"
