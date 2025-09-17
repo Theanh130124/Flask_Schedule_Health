@@ -1,12 +1,17 @@
-{% extends "layout/base.html" %} {% block title %}Kết quả tìm kiếm{% endblock %}
+{% extends "layout/base.html" %}
+
+{% block title %}Kết quả tìm kiếm{% endblock %}
+
 {% block content %}
 <h2 class="mb-3">Kết quả tìm kiếm bác sĩ</h2>
 
 {% if doctors %}
 <div class="row g-3">
-  {% for d in doctors %} {% set doctor_title = 'Bác sĩ ' ~ d.name %}
+  {% for d in doctors %}
+  {% set doctor_title = 'Bác sĩ ' ~ d.name %}
   <div class="col-12 col-md-6 col-lg-4">
     <div class="card h-100 shadow-sm doctor-card">
+      {# Cover ảnh nếu có #}
       {% if d.avatar %}
       <img
         class="card-img-top object-fit-cover doctor-cover"
@@ -50,40 +55,39 @@
           <li class="mb-1">
             <i class="bi bi-mortarboard me-1"></i>
             <strong>Kinh nghiệm:</strong>
-            {% if d.experience is not none %}{{ d.experience }} năm{% else %}-{%
-            endif %}
+            {% if d.experience is not none %}{{ d.experience }} năm{% else %}-{% endif %}
           </li>
           <li class="mb-1">
             <i class="bi bi-cash-coin me-1"></i>
             <strong>Phí khám:</strong>
-            {% if d.consultation_fee is not none %} {{
-            "{:,.0f}".format(d.consultation_fee) }} đ {% else %}-{% endif %}
+            {% if d.consultation_fee is not none %}
+              {{ "{:,.0f}".format(d.consultation_fee) }} đ
+            {% else %}-{% endif %}
           </li>
           <li>
             <strong>Đánh giá:</strong>
-            {% if d.rating is not none %} {% set rating = d.rating %} {% set
-            full = rating|int %} {% set half = 1 if (rating - full) >= 0.5 else
-            0 %} {% set empty = 5 - full - half %}
-            <span
-              class="rating-stars ms-1"
-              aria-label="Đánh giá {{ '%.1f'|format(rating) }} trên 5"
-            >
-              {% for _ in range(full) %}<i
-                class="bi bi-star-fill text-warning"
-              ></i
-              >{% endfor %} {% if half %}<i
-                class="bi bi-star-half text-warning"
-              ></i
-              >{% endif %} {% for _ in range(empty) %}<i
-                class="bi bi-star text-warning"
-              ></i
-              >{% endfor %}
-            </span>
-            <span class="small text-muted ms-1"
-              >({{ "{:.1f}".format(rating) }})</span
-            >
+            {% if d.rating is not none %}
+              {% set rating = d.rating %}
+              {% set full = rating|int %}
+              {% set half = 1 if (rating - full) >= 0.5 else 0 %}
+              {% set empty = 5 - full - half %}
+              <span
+                class="rating-stars ms-1"
+                aria-label="Đánh giá {{ '%.1f'|format(rating) }} trên 5"
+              >
+                {% for _ in range(full) %}
+                  <i class="bi bi-star-fill text-warning"></i>
+                {% endfor %}
+                {% if half %}
+                  <i class="bi bi-star-half text-warning"></i>
+                {% endif %}
+                {% for _ in range(empty) %}
+                  <i class="bi bi-star text-warning"></i>
+                {% endfor %}
+              </span>
+              <span class="small text-muted ms-1">({{ "{:.1f}".format(rating) }})</span>
             {% else %}
-            <span class="text-muted ms-1">Chưa có</span>
+              <span class="text-muted ms-1">Chưa có</span>
             {% endif %}
           </li>
         </ul>
@@ -95,6 +99,7 @@
           >
             <i class="bi bi-person-vcard me-1"></i> Thông tin chi tiết
           </a>
+          {# Có thể thêm nút đặt lịch nếu cần #}
         </div>
       </div>
     </div>
@@ -102,5 +107,28 @@
   {% endfor %}
 </div>
 {% else %}
-<div class="alert alert-warning">Không tìm thấy bác sĩ nào.</div>
-{% endif %} {% endblock %}
+  <div class="alert alert-warning">Không tìm thấy bác sĩ nào.</div>
+{% endif %}
+
+<style>
+  .doctor-avatar img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover; /* cắt vừa khung */
+    border-radius: 50%; /* avatar tròn */
+    border: 2px solid #ddd;
+  }
+
+  .avatar-fallback {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ccc;
+    color: #fff;
+    font-size: 20px;
+    border-radius: 50%;
+  }
+</style>
+{% endblock %}
