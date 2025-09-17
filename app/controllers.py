@@ -13,7 +13,7 @@ from app.vnpay_service import VNPay  # Import VNPay
 import math
 from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment, dao_payment
 from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot, \
-    ConsultationType
+    ConsultationType, DoctorLicense
 
 import google.oauth2.id_token
 import google.auth.transport.requests
@@ -101,6 +101,7 @@ def home():
     specialties = Specialty.query.order_by(Specialty.name.asc()).all()
     return render_template('index.html', hospitals=hospitals, specialties=specialties)
 
+
 def login():
     mse = ""
     form = LoginForm()
@@ -112,10 +113,19 @@ def login():
             mse = "Tài khoản không tồn tại trong hệ thống"
         else:
             if dao_authen.check_password_md5(user, password):
+                # Kiểm tra nếu là doctor chưa kích hoạt
+                if user.role == RoleEnum.DOCTOR and not user.is_active:
+                    # Lưu thông tin user vào session thay vì đăng nhập
+                    session['pending_doctor_id'] = user.user_id
+                    session['pending_doctor_username'] = user.username
+                    return redirect(url_for('upload_license'))
+
+                # Các trường hợp khác: đăng nhập bình thường
                 login_user(user)
                 return redirect(url_for('index_controller'))
             else:
                 mse = "Mật khẩu không đúng"
+
     return render_template('login.html', form=form, mse=mse)
 
 def logout_my_user():
@@ -195,6 +205,52 @@ def oauth_callback():
         app.logger.error(f"OAuth Callback Error: {e}")
 
         return f"Login failed: {e}", 400
+
+
+@app.route('/upload_license', methods=['GET', 'POST'])
+def upload_license():
+    # Kiểm tra nếu có pending doctor trong session
+    if 'pending_doctor_id' not in session:
+        flash('Vui lòng đăng nhập trước', 'error')
+        return redirect(url_for('login'))
+
+    doctor_id = session['pending_doctor_id']
+
+    if request.method == 'POST':
+        # Xử lý upload license
+        license_number = request.form.get('license_number')
+        issuing_authority = request.form.get('issuing_authority')
+        issue_date = request.form.get('issue_date')
+        expiry_date = request.form.get('expiry_date')
+        scope_description = request.form.get('scope_description')
+
+        # Lưu license vào database
+        try:
+            new_license = DoctorLicense(
+                doctor_id=doctor_id,
+                license_number=license_number,
+                issuing_authority=issuing_authority,
+                issue_date=datetime.strptime(issue_date, '%Y-%m-%d').date(),
+                expiry_date=datetime.strptime(expiry_date, '%Y-%m-%d').date() if expiry_date else None,
+                scope_description=scope_description,
+                is_verified=False  # Chờ admin xác thực
+            )
+            db.session.add(new_license)
+            db.session.commit()
+
+            # Xóa session pending
+            session.pop('pending_doctor_id', None)
+            session.pop('pending_doctor_username', None)
+
+            flash('Đã gửi chứng chỉ thành công. Vui lòng chờ xác thực từ quản trị viên.', 'success')
+            return redirect(url_for('login'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+
+    return render_template('upload_license.html', doctor_id=doctor_id)
+
 def register():
     form = RegisterForm()
     mse = None
@@ -568,3 +624,5 @@ def vnpay_return():
         flash(f'Thanh toán thất bại: {message}', 'error')
 
     return redirect(url_for('my_appointments'))
+
+
