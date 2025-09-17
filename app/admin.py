@@ -6,11 +6,13 @@ from app.models import (
     RoleEnum, User, Specialty, Hospital, Doctor, DoctorLicense,
     Patient, Appointment, HealthRecord, Invoice, Payment, Review, AppointmentStatus
 )
+from flask_admin.actions import action
+from flask_admin.model.template import EndpointLinkRowAction
 from app.extensions import db
 from app import app
-from flask import redirect, request
+from flask import redirect, request, flash
 import hashlib
-from app.dao import dao_stats , dao_doctor
+from app.dao import dao_stats , dao_doctor , dao_license
 from datetime import datetime
 
 
@@ -158,7 +160,7 @@ class DoctorView(AuthenticatedView):
 class DoctorLicenseView(AuthenticatedView):
     column_list = [
         'doctor', 'license_number', 'issuing_authority',
-        'issue_date', 'expiry_date', 'is_verified' ,
+        'issue_date', 'expiry_date', 'is_verified', 'verification_date'
     ]
 
     column_labels = {
@@ -168,11 +170,16 @@ class DoctorLicenseView(AuthenticatedView):
         'issue_date': 'Ngày cấp',
         'expiry_date': 'Ngày hết hạn',
         'is_verified': 'Đã xác minh',
-
+        'verification_date': 'Ngày xác minh'
     }
 
     column_filters = ['is_verified', 'issuing_authority']
     can_view_details = True
+    can_edit = False  # Vô hiệu hóa chỉnh sửa để bắt buộc sử dụng action verify
+
+    # Thêm action để xác minh giấy phép
+    action_disallowed_list = []  # Đảm bảo actions được cho phép
+    allowed_actions = ['verify_license']
 
     # Formatter để hiển thị đẹp tên bác sĩ trong list view
     def _doctor_formatter(view, context, model, name):
@@ -183,6 +190,35 @@ class DoctorLicenseView(AuthenticatedView):
     column_formatters = {
         'doctor': _doctor_formatter
     }
+
+    # Custom action để xác minh giấy phép
+    # Custom action để xác minh giấy phép
+    @action('verify_license', 'Xác minh', 'Bạn có chắc muốn xác minh các giấy phép đã chọn?')
+    def action_verify_license(self, ids):
+        try:
+            # Lấy ID admin hiện tại
+            admin_id = current_user.user_id
+
+            success_count = 0
+            error_messages = []
+
+            for license_id in ids:
+                success, message = dao_license.verify_doctor_license(license_id, admin_id)
+                if success:
+                    success_count += 1
+                else:
+                    error_messages.append(f"Giấy phép {license_id}: {message}")
+
+            if success_count > 0:
+                flash(f'Đã xác minh {success_count} giấy phép và kích hoạt tài khoản bác sĩ thành công!', 'success')
+
+            if error_messages:
+                flash('Một số giấy phép không thể xác minh: ' + '; '.join(error_messages), 'warning')
+
+        except Exception as e:
+            flash(f'Lỗi hệ thống: {str(e)}', 'error')
+
+        return redirect(request.referrer)
 
     # Custom form_args để dropdown chọn bác sĩ khi Create/Edit
     form_args = {
@@ -195,6 +231,15 @@ class DoctorLicenseView(AuthenticatedView):
             'get_label': lambda user: f"{user.first_name} {user.last_name}"
         }
     }
+
+    # Ghi đè form chỉnh sửa để hiển thị thông tin xác minh khi xem giấy phép đã xác minh
+    def edit_form(self, obj=None):
+        form = super().edit_form(obj)
+        if obj and obj.is_verified:
+            # Vô hiệu hóa chỉnh sửa cho giấy phép đã xác minh
+            for field in form:
+                field.render_kw = {'disabled': True}
+        return form
 
 # Patient management view
 class PatientView(AuthenticatedView):

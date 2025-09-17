@@ -42,7 +42,7 @@ def search_doctors(hospital_name=None, specialty_name=None, doctor_name=None,
             "experience": d.years_experience,
             "consultation_fee": float(d.consultation_fee) if d.consultation_fee is not None else None,
             "rating": float(d.average_rating) if d.average_rating is not None else None,
-          
+            "avatar": d.user.avatar,
             "accepts_insurance": bool(d.hospital.accepts_insurance),
         })
     return results

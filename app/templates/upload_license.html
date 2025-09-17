@@ -1,0 +1,58 @@
+{% extends "layout/base_login.html" %}
+
+{% block additional_css %}
+<!-- CSS riêng cho trang upload license -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/upload_license.css') }}">
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="card-title">Tải lên chứng chỉ hành nghề</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        Tài khoản của bạn chưa được kích hoạt. Vui lòng tải lên chứng chỉ hành nghề để được xác thực.
+                    </p>
+
+                    <form method="POST" enctype="multipart/form-data">
+                        <div class="mb-3">
+                            <label for="license_number" class="form-label">Số chứng chỉ</label>
+                            <input type="text" class="form-control" id="license_number" name="license_number" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="issuing_authority" class="form-label">Cơ quan cấp</label>
+                            <input type="text" class="form-control" id="issuing_authority" name="issuing_authority" required>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="issue_date" class="form-label">Ngày cấp</label>
+                                <input type="date" class="form-control" id="issue_date" name="issue_date" required>
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label for="expiry_date" class="form-label">Ngày hết hạn (nếu có)</label>
+                                <input type="date" class="form-control" id="expiry_date" name="expiry_date">
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="scope_description" class="form-label">Phạm vi hoạt động</label>
+                            <textarea class="form-control" id="scope_description" name="scope_description" rows="3"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Gửi để xác thực</button>
+                        <a href="{{ url_for('logout_my_user') }}" class="btn btn-secondary">Hủy</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
