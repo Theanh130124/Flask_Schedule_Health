@@ -1,32 +1,27 @@
 import uuid
-from datetime import datetime , date
+from datetime import datetime, date
 from math import ceil
 from flask_login import current_user, login_required, logout_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import flash, current_app
 from app.form import LoginForm, ScheduleForm
-from flask import render_template , redirect , request , url_for  , session , jsonify
+from flask import render_template, redirect, request, url_for, session, jsonify
 from app.decorators import role_only
 
 from sqlalchemy.orm import joinedload, subqueryload
-from app.models import Appointment,AppointmentStatus
+from app.models import Appointment, AppointmentStatus
 import math
-from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment, dao_user
-from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot,  ConsultationType,DoctorAvailability, Review
+# Kết hợp imports từ cả hai nhánh
+from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment, dao_user, dao_payment
+from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot, ConsultationType, DoctorAvailability, Review, DoctorLicense
 
-# Thêm import
-from app.dao import dao_payment
-from app.vnpay_service import VNPay  # Import VNPay
-import math
-from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment, dao_payment
-from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot, \
-    ConsultationType, DoctorLicense
-
+# Thêm import VNPay
+from app.vnpay_service import VNPay
 
 import google.oauth2.id_token
 import google.auth.transport.requests
 import requests
-from app import app , flow  
+from app import app, flow
 from app.extensions import db
 from app.form import LoginForm, RegisterForm
 
