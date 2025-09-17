@@ -114,3 +114,4 @@ def complete_appointment(appointment_id):
     except Exception as e:
         db.session.rollback()
         return False, f"Lỗi khi cập nhật trạng thái: {str(e)}"
+

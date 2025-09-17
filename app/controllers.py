@@ -538,13 +538,13 @@ def patient_detail(patient_id):
         return redirect(url_for("patient_search"))
     # lấy hồ sơ khám bệnh của bệnh nhân
     records=dao_healthrecord.get_records_by_patient(patient_id)
-    appointment = dao_appointment.get_patient_appointment(patient_id)
+    appointments = dao_appointment.get_patient_appointments(patient_id)
 
     return render_template(
         "patient_detail.html",
         patient=patient,
         records=records, #truyền recored và appointment vào temple
-        appointments=appointment
+        appointments=appointments
     )
 
 #update patients
