@@ -18,6 +18,11 @@
       integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC"
       crossorigin="anonymous"
     />
+    <!-- Thêm CSS cho thông tin chi tiết-->
+    <link
+      href="{{ url_for('static', filename='css/doctor_detail.css') }}"
+      rel="stylesheet"
+    />
 
     <!-- Thêm CSS cho tìm kiếm-->
     <link
@@ -67,7 +72,6 @@
     <!-- {#header#} -->
     {% block header %} {% include 'layout/header.html' %} {% endblock %}
 
-
     <!-- {#nav-content#} -->
     {% block nav_content %}
     <div class="container-fluid">
@@ -91,7 +95,6 @@
                 </a>
               </li>
 
-
               {% if current_user.role.name == 'PATIENT' %}
               <li class="nav-item w-100 my-3">
                 <a
@@ -103,7 +106,6 @@
                 </a>
               </li>
 
-
               <li class="nav-item w-100 my-3">
                 <a
                   href="/my_appointments"
@@ -113,8 +115,7 @@
                   <i class="fa-solid fa-list"></i> Xem lịch hẹn của tôi
                 </a>
               </li>
-              {% endif %}
-              {% if current_user.role.name == 'DOCTOR'  %}
+              {% endif %} {% if current_user.role.name == 'DOCTOR' %}
               <li class="nav-item w-100 my-3">
                 <a
                   href="/my_appointments"
@@ -124,7 +125,7 @@
                   <i class="fa-solid fa-list"></i> Lịch hẹn bệnh nhân
                 </a>
               </li>
-                 {% endif %}
+              {% endif %}
               <li class="nav-item w-100 my-3">
                 <a
                   href="/teacher/assignment"

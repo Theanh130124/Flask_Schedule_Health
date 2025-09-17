@@ -7,24 +7,76 @@ from flask import flash
 from app.form import LoginForm, ScheduleForm
 from flask import render_template , redirect , request , url_for  , session , jsonify
 from app.decorators import role_only
-
+from sqlalchemy.orm import joinedload, subqueryload
+from app.models import Appointment,AppointmentStatus
 import math
-from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment
-from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot, \
-    ConsultationType
-
+from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment, dao_user
+from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot,  ConsultationType,DoctorAvailability, Review
 import google.oauth2.id_token
 import google.auth.transport.requests
 import requests
-from app import app , flow  #là import __init__
+from app import app , flow  
 from app.extensions import db
-from app.models import Hospital, Specialty, User, Doctor, RoleEnum
 from app.form import LoginForm, RegisterForm
-from app.dao import dao_authen, dao_user, dao_search
-from app.models import User
 
 
 
+# Thôngtinchitietbacsi
+
+@app.route("/doctor/<int:doctor_id>", endpoint="doctor_detail")
+def doctor_detail(doctor_id: int):
+    d = (db.session.query(Doctor)
+         .options(
+             joinedload(Doctor.user),
+             joinedload(Doctor.specialty),
+             joinedload(Doctor.hospital),
+             subqueryload(Doctor.licenses),
+             subqueryload(Doctor.available_slots),
+             # nếu bạn đã thêm relationship:
+             # subqueryload(Doctor.availabilities),
+             # subqueryload(Doctor.reviews),
+         )
+         .filter(Doctor.doctor_id == doctor_id)
+         .first_or_404())
+
+    # Tính avg_rating 
+    avg_rating = float(d.average_rating) if d.average_rating is not None else None
+
+    # Slot trống
+    upcoming_slots = [s for s in d.available_slots if not s.is_booked]
+    upcoming_slots.sort(key=lambda s: (s.slot_date, s.start_time))
+
+    # Lấy các appointment đã hoàn tất của bệnh nhân hiện tại
+    eligible_appts = []
+    if current_user.is_authenticated and current_user.role == RoleEnum.PATIENT:
+        eligible_appts = (
+            db.session.query(Appointment)
+            .outerjoin(Review, Review.appointment_id == Appointment.appointment_id)
+            .filter(
+                Appointment.doctor_id == doctor_id,
+                Appointment.patient_id == current_user.user_id,
+                Appointment.status == AppointmentStatus.Completed,
+                Review.appointment_id.is_(None)  # chưa review
+            )
+            .order_by(Appointment.appointment_time.desc())
+            .all()
+        )
+
+    # Lấy reviews để hiển thị
+    reviews = (Review.query
+               .filter_by(doctor_id=doctor_id, is_visible=True)
+               .order_by(Review.review_date.desc())
+               .all())
+
+    return render_template(
+        "doctor_detail.html",
+        d=d,
+        avg_rating=avg_rating,
+        upcoming_slots=upcoming_slots[:10],
+        reviews=reviews,
+        eligible_appts=eligible_appts
+    )
+# chitiettimkiem
 @app.route("/api/hospitals")
 def api_hospitals():
     q = request.args.get("q", "")
