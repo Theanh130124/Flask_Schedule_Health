@@ -9,10 +9,8 @@
   {% set doctor_title = 'Bác sĩ ' ~ d.name %}
   <div class="col-12 col-md-6 col-lg-4">
     <div class="card h-100 shadow-sm doctor-card">
-    
-      {% if d.avatar %}
-        <img class="card-img-top object-fit-cover doctor-cover" src="{{ d.avatar }}" alt="{{ doctor_title }}">
-      {% endif %}
+
+
 
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
@@ -78,7 +76,7 @@
         </ul>
 
         <div class="d-grid gap-2">
-       
+          {# chỗ nút hành động (ví dụ: đặt lịch) nếu cần #}
         </div>
       </div>
     </div>
@@ -88,4 +86,26 @@
 {% else %}
   <div class="alert alert-warning">Không tìm thấy bác sĩ nào.</div>
 {% endif %}
+
+<style>
+  .doctor-avatar img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover; /* cắt vừa khung, không méo hình */
+  border-radius: 50%; /* bo tròn avatar */
+  border: 2px solid #ddd; /* viền nhẹ */
+}
+
+.avatar-fallback {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ccc;
+  color: #fff;
+  font-size: 20px;
+  border-radius: 50%;
+}
+</style>
 {% endblock %}

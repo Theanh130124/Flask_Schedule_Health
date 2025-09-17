@@ -2,18 +2,25 @@
 
 {% block content %}
 <div class="container mt-4">
-    <h2 class="mb-4">Đặt lịch khám</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0"><i class="fas fa-calendar-plus me-2"></i>Đặt lịch khám</h2>
+        <a href="{{ url_for('my_appointments') }}" class="btn btn-outline-primary">
+            <i class="fas fa-history me-1"></i>Lịch sử đặt khám
+        </a>
+    </div>
 
     <!-- Form lọc -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5 class="mb-0">Tìm kiếm lịch khả dụng</h5>
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-search me-2"></i>Tìm kiếm lịch khả dụng</h5>
         </div>
         <div class="card-body">
             <form method="get" action="{{ url_for('available_slots') }}">
                 <div class="row">
                     <div class="col-md-3 mb-3">
-                        <label for="hospital" class="form-label">Bệnh viện</label>
+                        <label for="hospital" class="form-label fw-semibold">
+                            <i class="fas fa-hospital me-1"></i>Bệnh viện
+                        </label>
                         <select class="form-select" id="hospital" name="hospital_id">
                             <option value="">Tất cả bệnh viện</option>
                             {% for hospital in hospitals %}
@@ -26,7 +33,9 @@
                     </div>
 
                     <div class="col-md-3 mb-3">
-                        <label for="specialty" class="form-label">Chuyên khoa</label>
+                        <label for="specialty" class="form-label fw-semibold">
+                            <i class="fas fa-stethoscope me-1"></i>Chuyên khoa
+                        </label>
                         <select class="form-select" id="specialty" name="specialty_id">
                             <option value="">Tất cả chuyên khoa</option>
                             {% for specialty in specialties %}
@@ -39,15 +48,21 @@
                     </div>
 
                     <div class="col-md-3 mb-3">
-                        <label for="date" class="form-label">Ngày khám</label>
+                        <label for="date" class="form-label fw-semibold">
+                            <i class="fas fa-calendar-day me-1"></i>Ngày khám
+                        </label>
                         <input type="date" class="form-control" id="date" name="date"
                                value="{{ selected_date if selected_date else '' }}"
                                min="{{ current_date }}">
                     </div>
 
                     <div class="col-md-3 mb-3 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary me-2">Tìm kiếm</button>
-                        <a href="{{ url_for('available_slots') }}" class="btn btn-secondary">Xóa lọc</a>
+                        <button type="submit" class="btn btn-primary me-2 flex-grow-1">
+                            <i class="fas fa-search me-1"></i>Tìm kiếm
+                        </button>
+                        <a href="{{ url_for('available_slots') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i>Xóa
+                        </a>
                     </div>
                 </div>
                 <!-- Thêm các tham số phân trang vào form -->
@@ -57,11 +72,11 @@
     </div>
 
     <!-- Danh sách slot khả dụng -->
-    <div class="card">
-        <div class="card-header d-flex justify-content-between align-items-center">
-            <h5 class="mb-0">Lịch khám khả dụng</h5>
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Lịch khám khả dụng</h5>
             {% if total_slots > 0 %}
-            <span class="badge bg-primary">Tổng: {{ total_slots }} slot</span>
+            <span class="badge bg-primary rounded-pill">Tổng: {{ total_slots }} slot</span>
             {% endif %}
         </div>
         <div class="card-body">
@@ -69,34 +84,50 @@
             <div class="row">
                 {% for slot in available_slots %}
                 <div class="col-md-6 col-lg-4 mb-4">
-                    <div class="card h-100">
+                    <div class="card h-100 slot-card">
                         <div class="card-body">
-                            <h5 class="card-title">Dr. {{ slot.doctor.user.first_name }} {{ slot.doctor.user.last_name }}</h5>
-                            <h6 class="card-subtitle mb-2 text-muted">{{ slot.doctor.specialty.name }}</h6>
-
-                            <div class="mb-2">
-                                <strong>Bệnh viện:</strong> {{ slot.doctor.hospital.name }}
+                            <div class="d-flex align-items-center mb-3">
+                                <img src="{{slot.doctor.user.avatar}}"
+                                     alt="Avatar" class="rounded-circle me-3" width="60" height="60">
+                                <div>
+                                    <h5 class="card-title mb-0 text-primary">BS. {{ slot.doctor.user.first_name }} {{ slot.doctor.user.last_name }}</h5>
+                                    <span class="badge bg-info bg-opacity-10 text-info">{{ slot.doctor.specialty.name }}</span>
+                                </div>
                             </div>
 
                             <div class="mb-2">
-                                <strong>Địa chỉ:</strong> {{ slot.doctor.hospital.address }}
+                                <i class="fas fa-hospital text-primary me-2"></i>
+                                <span class="text-muted">{{ slot.doctor.hospital.name }}</span>
                             </div>
 
-                            <div class="mb-2">
-                                <strong>Ngày:</strong> {{ slot.slot_date.strftime('%d/%m/%Y') }}
+                            <div class="mb-2 small text-truncate">
+                                <i class="fas fa-map-marker-alt text-primary me-2"></i>
+                                {{ slot.doctor.hospital.address }}
                             </div>
 
-                            <div class="mb-2">
-                                <strong>Giờ:</strong> {{ slot.start_time.strftime('%H:%M') }} - {{ slot.end_time.strftime('%H:%M') }}
+                            <div class="d-flex justify-content-between mb-2">
+                                <div>
+                                    <i class="far fa-calendar-alt text-primary me-2"></i>
+                                    <span>{{ slot.slot_date.strftime('%d/%m/%Y') }}</span>
+                                </div>
+                                <div>
+                                    <i class="far fa-clock text-primary me-2"></i>
+                                    <span>{{ slot.start_time.strftime('%H:%M') }} - {{ slot.end_time.strftime('%H:%M') }}</span>
+                                </div>
                             </div>
 
-                            <div class="mb-3">
-                                <strong>Phí khám:</strong>
-                                <span class="text-primary fw-bold">{{ "{:,.0f} VNĐ".format(slot.doctor.consultation_fee) }}</span>
+                            <div class="mb-3 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <i class="fas fa-money-bill-wave text-primary me-2"></i>
+                                    <span class="fw-bold text-primary">{{ "{:,.0f} VNĐ".format(slot.doctor.consultation_fee) }}</span>
+                                </div>
+                                <span class="badge bg-success bg-opacity-10 text-success">Còn trống</span>
                             </div>
 
                             <a href="{{ url_for('book_appointment', slot_id=slot.slot_id) }}"
-                               class="btn btn-success w-100">Đặt lịch ngay</a>
+                               class="btn btn-success w-100">
+                                <i class="fas fa-calendar-check me-2"></i>Đặt lịch ngay
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -144,14 +175,53 @@
             <!-- Kết thúc phân trang -->
 
             {% else %}
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle me-2"></i>
-                Hiện không có lịch khám nào khả dụng với tiêu chí tìm kiếm của bạn.
+            <div class="text-center py-5">
+                <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Không tìm thấy lịch khám nào</h5>
+                <p class="text-muted">Hiện không có lịch khám nào khả dụng với tiêu chí tìm kiếm của bạn.</p>
+                <a href="{{ url_for('available_slots') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-redo me-1"></i>Thử lại với bộ lọc khác
+                </a>
             </div>
             {% endif %}
         </div>
     </div>
 </div>
+
+<style>
+    .slot-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .slot-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .form-select:focus, .form-control:focus {
+        border-color: #2c7da0;
+        box-shadow: 0 0 0 0.25rem rgba(44, 125, 160, 0.25);
+    }
+
+    .btn-primary {
+        background-color: #2c7da0;
+        border-color: #2c7da0;
+    }
+
+    .btn-primary:hover {
+        background-color: #236685;
+        border-color: #236685;
+    }
+
+    .page-item.active .page-link {
+        background-color: #2c7da0;
+        border-color: #2c7da0;
+    }
+
+    .page-link {
+        color: #2c7da0;
+    }
+</style>
 
 <script>
 // Set min date cho input date là ngày hiện tại

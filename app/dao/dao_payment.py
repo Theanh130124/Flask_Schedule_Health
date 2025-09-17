@@ -14,6 +14,11 @@ def create_vnpay_payment(appointment):
     if not appointment.invoice or appointment.invoice.status != InvoiceStatus.Pending:
         return None, "Hóa đơn không tồn tại hoặc đã được thanh toán"
 
+    #Nếu tại dùng luôn
+    existing_payment = Payment.query.filter_by(invoice_id=appointment.invoice.invoice_id).first()
+    if existing_payment:
+        return existing_payment, "Đã có payment cho hóa đơn này"
+
     # Tạo payment record
     payment = Payment(
         invoice_id=appointment.invoice.invoice_id,
@@ -45,13 +50,24 @@ def process_vnpay_callback(params):
     if not payment:
         return False, "Payment không tồn tại"
 
+    # Lấy invoice và appointment liên quan
+    invoice = payment.invoice
+    appointment = invoice.appointment
+
     if response_code == '00':  # Thành công
+        # CẬP NHẬT QUAN TRỌNG: Đảm bảo cả Payment và Invoice đều được cập nhật
         payment.status = PaymentStatus.Completed
         payment.transaction_id = transaction_id
         payment.payment_date = datetime.now()
 
-        # Cập nhật invoice status
-        payment.invoice.status = InvoiceStatus.Paid
+        # Cập nhật invoice status thành Paid
+        invoice.status = InvoiceStatus.Paid
+
+        # Nếu appointment chưa completed và đã thanh toán, có thể cập nhật trạng thái
+        if appointment.status == AppointmentStatus.Scheduled:
+            # Có thể thêm logic để đánh dấu appointment là đã thanh toán
+            # hoặc giữ nguyên trạng thái Scheduled
+            pass
 
         db.session.commit()
         return True, "Thanh toán thành công"
