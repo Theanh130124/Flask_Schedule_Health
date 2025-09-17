@@ -6,9 +6,7 @@ body {
     min-height: 100vh;
     font-family: Arial, sans-serif;
 }
-.container:hover {
-    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
-}
+
 h2 {
     text-align: center;
     color: #e6ba00;
