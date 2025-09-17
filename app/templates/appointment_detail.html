@@ -54,6 +54,24 @@
                                 </p>
                             </div>
                         </div>
+
+                        <!-- Nút thanh toán MoMo -->
+                       {% if appointment.invoice.status.value == 'Pending' and
+                              appointment.status.value in ['Scheduled', 'Completed'] and
+                              current_user.role.name == 'PATIENT' and
+                              appointment.patient_id == current_user.user_id %}
+                        <div class="mt-3">
+                            <!-- Nút MoMo -->
+
+
+                            <!-- Nút VNPAY -->
+                            <a href="{{ url_for('vnpay_payment', appointment_id=appointment.appointment_id) }}"
+                               class="btn btn-primary">
+                                <img src="{{ url_for('static', filename='images/vnpay_logo.png') }}" height="24" class="me-2" alt="VNPAY">
+                                Thanh toán VNPAY
+                            </a>
+                        </div>
+                        {% endif %}
                     </div>
                     {% endif %}
 

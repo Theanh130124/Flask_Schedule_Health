@@ -3,13 +3,15 @@ from datetime import datetime , date
 from math import ceil
 from flask_login import current_user, login_required, logout_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import flash
+from flask import flash, current_app
 from app.form import LoginForm, ScheduleForm
 from flask import render_template , redirect , request , url_for  , session , jsonify
 from app.decorators import role_only
-
+# Thêm import
+from app.dao import dao_payment
+from app.vnpay_service import VNPay  # Import VNPay
 import math
-from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment
+from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment, dao_payment
 from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot, \
     ConsultationType
 
@@ -517,3 +519,52 @@ def reschedule_appointment(appointment_id):
     return render_template('reschedule_appointment.html',
                            appointment=appointment,
                            available_slots=available_slots)
+
+
+
+
+
+# Thêm routes mới
+@app.route('/payment/vnpay/<int:appointment_id>')
+@login_required
+@role_only([RoleEnum.PATIENT])
+def vnpay_payment(appointment_id):
+    appointment = dao_appointment.get_appointment_by_id(appointment_id)
+
+    if not appointment or appointment.patient_id != current_user.user_id:
+        flash('Lịch hẹn không tồn tại', 'error')
+        return redirect(url_for('my_appointments'))
+
+    # Tạo payment
+    payment, message = dao_payment.create_vnpay_payment(appointment)
+    if not payment:
+        flash(message, 'error')
+        return redirect(url_for('appointment_detail', appointment_id=appointment_id))
+
+    # Tạo payment URL
+    vnpay = VNPay()
+    order_info = f"Thanh toan lich hen #{appointment_id}"
+    amount = float(appointment.invoice.amount)
+    ip_addr = request.remote_addr
+
+    payment_url = vnpay.create_payment_url(
+        order_info=order_info,
+        amount=amount,
+        order_id=payment.payment_id,
+        ip_addr=ip_addr
+    )
+
+    return redirect(payment_url)
+
+
+@app.route('/payment/vnpay_return')
+def vnpay_return():
+    params = request.args.to_dict()
+    success, message = dao_payment.process_vnpay_callback(params)
+
+    if success:
+        flash('Thanh toán thành công!', 'success')
+    else:
+        flash(f'Thanh toán thất bại: {message}', 'error')
+
+    return redirect(url_for('my_appointments'))
