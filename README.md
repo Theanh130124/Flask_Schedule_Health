@@ -16,4 +16,8 @@ netstat -ano | findstr :5000
 taskkill /PID 12345 /F
 
 
+cd .. 
+python -m app.index.py 
+
+
 ```
