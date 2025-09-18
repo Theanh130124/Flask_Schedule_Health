@@ -6,12 +6,8 @@
 {% endblock %}
 
 {% block content %}
-<div class="container">
+<div class="register-container">
     <div class="header">
-        <a href="#">
-            <i class="fa-solid fa-language"></i>
-            English
-        </a>
         <h2 class="mt-4 mb-4">ĐĂNG KÝ</h2>
     </div>
 
@@ -116,7 +112,7 @@
         <p class="text-danger">{{ mse }}</p>
         {% endif %}
 
-        <button type="submit" class="btn btn-success w-100">
+        <button type="submit" class="btn btn-register w-100">
             {{ form.submit.label }}
         </button>
     </form>
