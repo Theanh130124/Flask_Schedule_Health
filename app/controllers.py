@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime , date
 from math import ceil
+from sqlalchemy.orm import joinedload, subqueryload
 from flask_login import current_user, login_required, logout_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask import flash, current_app
@@ -13,7 +14,7 @@ from app.vnpay_service import VNPay  # Import VNPay
 import math
 from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment, dao_payment
 from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot, \
-    ConsultationType, DoctorLicense
+    ConsultationType, DoctorLicense, Appointment, Review, AppointmentStatus
 
 import google.oauth2.id_token
 import google.auth.transport.requests
@@ -100,6 +101,60 @@ def home():
     hospitals = Hospital.query.order_by(Hospital.name.asc()).all()
     specialties = Specialty.query.order_by(Specialty.name.asc()).all()
     return render_template('index.html', hospitals=hospitals, specialties=specialties)
+# Thôngtinchitietbacsi
+@app.route("/doctor/<int:doctor_id>", endpoint="doctor_detail")
+def doctor_detail(doctor_id: int):
+    # Lấy thông tin bác sĩ
+    d = (db.session.query(Doctor)
+         .options(
+             joinedload(Doctor.user),
+             joinedload(Doctor.specialty),
+             joinedload(Doctor.hospital),
+             subqueryload(Doctor.licenses),
+             subqueryload(Doctor.available_slots),
+         )
+         .filter(Doctor.doctor_id == doctor_id)
+         .first_or_404())
+
+    # Tính avg_rating
+    avg_rating = float(d.average_rating) if d.average_rating is not None else None
+
+    # Slot trống
+    upcoming_slots = [s for s in d.available_slots if not s.is_booked]
+    upcoming_slots.sort(key=lambda s: (s.slot_date, s.start_time))
+
+    # Lấy các appointment đã hoàn tất của bệnh nhân hiện tại (nếu đã đăng nhập)
+    eligible_appts = []
+    if current_user.is_authenticated and current_user.role == RoleEnum.PATIENT:
+        eligible_appts = (
+            db.session.query(Appointment)
+            .outerjoin(Review, Review.appointment_id == Appointment.appointment_id)
+            .filter(
+                Appointment.doctor_id == doctor_id,
+                Appointment.patient_id == current_user.user_id,
+                Appointment.status == AppointmentStatus.Completed,
+                Review.appointment_id.is_(None)  # chưa review
+            )
+            .order_by(Appointment.appointment_time.desc())
+            .all()
+        )
+
+    # Lấy reviews để hiển thị
+    reviews = (Review.query
+               .filter_by(doctor_id=doctor_id, is_visible=True)
+               .order_by(Review.review_date.desc())
+               .all())
+
+    return render_template(
+        "doctor_detail.html",
+        d=d,
+        avg_rating=avg_rating,
+        upcoming_slots=upcoming_slots[:10],
+        reviews=reviews,
+        eligible_appts=eligible_appts
+    )
+# chitiettimkiem
+
 
 
 def login():
