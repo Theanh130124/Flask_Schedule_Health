@@ -1,0 +1,74 @@
+{% extends 'admin/master.html' %}
+
+{% block body %}
+<h2>Tạo Bác Sĩ Mới</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+
+    <h3>Thông tin tài khoản</h3>
+    <div class="form-group">
+        {{ form.username.label }} {{ form.username(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.password.label }} {{ form.password(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.email.label }} {{ form.email(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.first_name.label }} {{ form.first_name(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.last_name.label }} {{ form.last_name(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.phone_number.label }} {{ form.phone_number(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.address.label }} {{ form.address(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.date_of_birth.label }} {{ form.date_of_birth(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.gender.label }} {{ form.gender(class="form-control") }}
+    </div>
+
+    <h3>Thông tin bác sĩ</h3>
+    <div class="form-group">
+        {{ form.hospital_id.label }} {{ form.hospital_id(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.specialty_id.label }} {{ form.specialty_id(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.years_experience.label }} {{ form.years_experience(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.educational_level.label }} {{ form.educational_level(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.consultation_fee.label }} {{ form.consultation_fee(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.bio.label }} {{ form.bio(class="form-control") }}
+    </div>
+
+    <h3>Thông tin giấy phép (tùy chọn)</h3>
+    <div class="form-group">
+        {{ form.license_number.label }} {{ form.license_number(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.issuing_authority.label }} {{ form.issuing_authority(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.issue_date.label }} {{ form.issue_date(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.expiry_date.label }} {{ form.expiry_date(class="form-control") }}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Tạo Bác Sĩ</button>
+    <a href="{{ url_for('doctor.index_view') }}" class="btn btn-secondary">Hủy</a>
+</form>
+{% endblock %}

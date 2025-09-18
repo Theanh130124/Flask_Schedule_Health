@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
-from wtforms import TimeField, BooleanField
+from wtforms import TimeField, BooleanField, TextAreaField, DecimalField
 from wtforms.fields import StringField, EmailField, SubmitField, PasswordField, SelectField, DateField, IntegerField
 from wtforms.validators import InputRequired, Length, NumberRange, Regexp, DataRequired, ValidationError, Email, EqualTo, Optional
 
@@ -119,3 +119,33 @@ class PatientUpdateForm(BaseUserForm):
 
     submit = SubmitField("Cập nhật")
 
+
+class DoctorUserForm(FlaskForm):
+    # User fields
+    username = StringField('Tên đăng nhập', validators=[DataRequired(), Length(min=3, max=100)])
+    password = PasswordField('Mật khẩu', validators=[DataRequired(), Length(min=6)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    first_name = StringField('Tên', validators=[DataRequired()])
+    last_name = StringField('Họ', validators=[DataRequired()])
+    phone_number = StringField('Số điện thoại', validators=[DataRequired()])
+    address = TextAreaField('Địa chỉ', validators=[DataRequired()])
+    date_of_birth = StringField('Ngày sinh (YYYY-MM-DD)')
+    gender = SelectField('Giới tính', choices=[
+        ('MALE', 'Nam'),
+        ('FEMALE', 'Nữ'),
+        ('OTHER', 'Khác')
+    ])
+
+    # Doctor fields
+    hospital_id = SelectField('Bệnh viện', coerce=int, validators=[DataRequired()])
+    specialty_id = SelectField('Chuyên khoa', coerce=int, validators=[DataRequired()])
+    years_experience = IntegerField('Số năm kinh nghiệm', default=0)
+    educational_level = StringField('Trình độ học vấn', validators=[DataRequired()])
+    bio = TextAreaField('Tiểu sử')
+    consultation_fee = DecimalField('Phí tư vấn', places=2, default=0.00)
+
+    # License fields (optional)
+    license_number = StringField('Số giấy phép')
+    issuing_authority = StringField('Cơ quan cấp')
+    issue_date = StringField('Ngày cấp (YYYY-MM-DD)')
+    expiry_date = StringField('Ngày hết hạn (YYYY-MM-DD)')

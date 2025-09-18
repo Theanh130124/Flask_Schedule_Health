@@ -2,15 +2,18 @@ from flask_login import logout_user, current_user
 from flask_admin.contrib.sqla import ModelView
 from flask_admin import expose, BaseView, Admin
 from sqlalchemy import extract
+from sqlalchemy.exc import IntegrityError
+
+from app.form import DoctorUserForm
 from app.models import (
     RoleEnum, User, Specialty, Hospital, Doctor, DoctorLicense,
-    Patient, Appointment, HealthRecord, Invoice, Payment, Review, AppointmentStatus
+    Patient, Appointment, HealthRecord, Invoice, Payment, Review, AppointmentStatus, GenderEnum
 )
 from flask_admin.actions import action
 from flask_admin.model.template import EndpointLinkRowAction
 from app.extensions import db
 from app import app
-from flask import redirect, request, flash
+from flask import redirect, request, flash, url_for
 import hashlib
 from app.dao import dao_stats , dao_doctor , dao_license
 from datetime import datetime
@@ -543,6 +546,85 @@ class StatsView(AuthenticatedBaseView):
             chart_appointments=chart_appointments,
             chart_revenues=chart_revenues
         )
+
+
+class CreateDoctorView(AuthenticatedBaseView):
+
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.role == RoleEnum.ADMIN
+
+    @expose('/', methods=('GET', 'POST'))
+    def index(self):
+        form = DoctorUserForm()
+
+        # Populate dropdowns
+        form.hospital_id.choices = [(h.hospital_id, h.name) for h in Hospital.query.all()]
+        form.specialty_id.choices = [(s.specialty_id, s.name) for s in Specialty.query.all()]
+
+        if form.validate_on_submit():
+            try:
+                # Hash password
+                def hash_password(password):
+                    return str(hashlib.md5(password.encode('utf-8')).hexdigest())
+
+                # Create User with is_active=False
+                user = User(
+                    username=form.username.data,
+                    password=hash_password(form.password.data),
+                    email=form.email.data,
+                    first_name=form.first_name.data,
+                    last_name=form.last_name.data,
+                    phone_number=form.phone_number.data,
+                    address=form.address.data,
+                    date_of_birth=datetime.strptime(form.date_of_birth.data,
+                                                    '%Y-%m-%d') if form.date_of_birth.data else None,
+                    gender=GenderEnum[form.gender.data] if form.gender.data else None,
+                    role=RoleEnum.DOCTOR,
+                    is_active=False  # Set to False as requested
+                )
+
+                db.session.add(user)
+                db.session.flush()  # Get the user_id without committing
+
+                # Create Doctor
+                doctor = Doctor(
+                    doctor_id=user.user_id,
+                    hospital_id=form.hospital_id.data,
+                    specialty_id=form.specialty_id.data,
+                    years_experience=form.years_experience.data,
+                    educational_level=form.educational_level.data,
+                    bio=form.bio.data,
+                    consultation_fee=form.consultation_fee.data
+                )
+
+                db.session.add(doctor)
+
+                # Create License if provided
+                if form.license_number.data:
+                    license = DoctorLicense(
+                        doctor_id=user.user_id,
+                        license_number=form.license_number.data,
+                        issuing_authority=form.issuing_authority.data,
+                        issue_date=datetime.strptime(form.issue_date.data,
+                                                     '%Y-%m-%d') if form.issue_date.data else None,
+                        expiry_date=datetime.strptime(form.expiry_date.data,
+                                                      '%Y-%m-%d') if form.expiry_date.data else None,
+                        is_verified=False
+                    )
+                    db.session.add(license)
+
+                db.session.commit()
+                flash('Đã tạo bác sĩ và tài khoản thành công! Tài khoản đang ở trạng thái chưa kích hoạt.', 'success')
+                return redirect(url_for('doctor.index_view'))
+
+            except IntegrityError:
+                db.session.rollback()
+                flash('Tên đăng nhập hoặc email đã tồn tại!', 'error')
+            except Exception as e:
+                db.session.rollback()
+                flash(f'Lỗi khi tạo bác sĩ: {str(e)}', 'error')
+
+        return self.render('admin/create_doctor.html', form=form)
 # Initialize admin
 admin = Admin(app, name='Quản lý Đặt lịch khám trực tuyến', template_mode='bootstrap4')
 
@@ -559,6 +641,6 @@ admin.add_view(InvoiceView(Invoice, db.session, name='Hóa đơn'))
 admin.add_view(PaymentView(Payment, db.session, name='Thanh toán'))
 admin.add_view(ReviewView(Review, db.session, name='Đánh giá'))
 admin.add_view(StatsView(name='Thống kê', endpoint='stats'))
-
+admin.add_view(CreateDoctorView(name='Tạo Bác Sĩ Mới', endpoint='create_doctor'))
 admin.add_view(LogoutView(name='Đăng xuất'))
 admin.add_view(LoginUserView(name='Về trang đăng nhập'))
