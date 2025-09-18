@@ -1,25 +1,23 @@
-from werkzeug.security import generate_password_hash
-from app.models  import User
-from app.extensions import db
-from flask_login import current_user
 import hashlib
+from app.models import User, Patient, RoleEnum
+from app.extensions import db
+from app.dao import dao_healthrecord
+from datetime import datetime
 
 
-def create_user(username, email, password, first_name, last_name, phone_number, address,
-                date_of_birth=None, gender=None):
+def create_user_with_role(username, email, password, first_name, last_name,
+                          phone_number, address, date_of_birth=None,
+                          gender=None, role=RoleEnum.PATIENT):
     """
-    Tạo user mới, mặc định role = PATIENT
+    Tạo user mới theo role. Nếu role=PATIENT thì tự tạo Patient + HealthRecord.
     """
-
-    # Kiểm tra trùng username, email, phone
+    # Kiểm tra trùng
     if check_username_exists(username) or check_email_exists(email) or check_phone_exists(phone_number):
-        return None  # đã tồn tại
+        return None
 
-    # Băm mật khẩu MD5
     hashed_password = hashlib.md5(password.strip().encode("utf-8")).hexdigest()
 
-    # Tạo đối tượng User
-    new_user = User(
+    user = User(
         username=username,
         email=email,
         password=hashed_password,
@@ -29,20 +27,30 @@ def create_user(username, email, password, first_name, last_name, phone_number, 
         address=address,
         date_of_birth=date_of_birth,
         gender=gender,
-        role="PATIENT"  # mặc định là bệnh nhân
+        role=role,
+        is_active=True
     )
 
     try:
-        db.session.add(new_user)
+        db.session.add(user)
+        db.session.flush()  # để có user_id
+
+        if role == RoleEnum.PATIENT:
+            patient = Patient(patient_id=user.user_id)
+            db.session.add(patient)
+
+            # tạo healthrecord trống
+            dao_healthrecord.create_empty_health_record(user.user_id)
+
         db.session.commit()
-        return new_user
+        return user
+
     except Exception as ex:
         db.session.rollback()
-        print(f"Lỗi đăng ký: {ex}")
+        print(f"Lỗi tạo user: {ex}")
         return None
 
 
-# ======================= HÀM HỖ TRỢ =======================
 
 def check_email_exists(email):
     return User.query.filter_by(email=email).first() is not None
