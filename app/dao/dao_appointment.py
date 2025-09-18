@@ -1,7 +1,8 @@
 
 from app import db
+from app.email_service import send_appointment_notification
 from app.models import AvailableSlot, Appointment, AppointmentStatus, Invoice, InvoiceStatus, Payment, PaymentStatus, \
-    ConsultationType
+    ConsultationType , User, Doctor,Patient
 from datetime import datetime
 
 
@@ -42,6 +43,7 @@ def book_appointment(patient_id, slot_id, reason, consultation_type=Consultation
         # Đánh dấu slot đã được đặt
         slot.is_booked = True
         db.session.commit()
+        send_appointment_notification(appointment, 'booking')
         return appointment, "Đặt lịch thành công"
     except Exception as e:
         db.session.rollback()
@@ -110,6 +112,8 @@ def cancel_appointment(appointment_id, reason, cancelled_by_patient=True):
             appointment.invoice.status = InvoiceStatus.Cancelled
 
         db.session.commit()
+
+        send_appointment_notification(appointment, 'cancellation')
 
         if slot_found:
             return True, "Hủy lịch hẹn thành công và slot đã được mở lại"
@@ -189,9 +193,23 @@ def reschedule_appointment(appointment_id, new_slot_id, reason=None):
         new_slot.is_booked = True  # Đặt slot mới
 
         db.session.commit()
+        send_appointment_notification(appointment, 'reschedule')
         return True, "Sửa lịch hẹn thành công"
 
     except Exception as e:
         db.session.rollback()
         return False, f"Lỗi khi sửa lịch hẹn: {str(e)}"
+
+
+def get_info_by_id(user_id):
+    """Lấy thông tin user bằng user_id"""
+    return User.query.get(user_id)
+
+def get_doctor_by_userid(user_id):
+    """Lấy thông tin doctor bằng user_id"""
+    return Doctor.query.filter_by(doctor_id=user_id).first()
+
+def get_patient_by_userid(user_id):
+    """Lấy thông tin patient bằng user_id"""
+    return Patient.query.filter_by(patient_id=user_id).first()
 

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Xác nhận đặt lịch hẹn</title>
+</head>
+<body>
+    <h2>Xác nhận đặt lịch hẹn thành công</h2>
+    <p>Kính gửi {{ recipient_name }},</p>
+
+    <p>Lịch hẹn đã được đặt thành công với thông tin sau:</p>
+
+    <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px;">
+        <p><strong>Mã lịch hẹn:</strong> #{{ appointment.appointment_id }}</p>
+        <p><strong>Bác sĩ:</strong> {{ doctor_name }}</p>
+        <p><strong>Bệnh nhân:</strong> {{ patient_name }}</p>
+        <p><strong>Thời gian:</strong> {{ appointment.appointment_time.strftime('%H:%M %d/%m/%Y') }}</p>
+        <p><strong>Địa điểm:</strong> {{ hospital_name }}</p>
+        <p><strong>Lý do khám:</strong> {{ appointment.reason or 'Không có' }}</p>
+        <p><strong>Hình thức tư vấn:</strong> {{ appointment.consultation_type.value }}</p>
+    </div>
+
+    <p>Vui lòng đến đúng giờ. Nếu có thay đổi, xin vui lòng thông báo trước ít nhất 24 giờ.</p>
+
+    <p>Trân trọng,<br>Đội ngũ hỗ trợ</p>
+</body>
+</html>

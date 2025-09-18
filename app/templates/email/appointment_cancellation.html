@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Thông báo hủy lịch hẹn</title>
+</head>
+<body>
+    <h2>Thông báo hủy lịch hẹn</h2>
+    <p>Kính gửi {{ recipient_name }},</p>
+
+    <p>Lịch hẹn đã được hủy với thông tin sau:</p>
+
+    <div style="background-color: #f9f9f9; padding: 15px; border-radius: 5px;">
+        <p><strong>Mã lịch hẹn:</strong> #{{ appointment.appointment_id }}</p>
+        <p><strong>Bác sĩ:</strong> {{ doctor_name }}</p>
+        <p><strong>Bệnh nhân:</strong> {{ patient_name }}</p>
+        <p><strong>Thời gian dự kiến:</strong> {{ appointment.appointment_time.strftime('%H:%M %d/%m/%Y') }}</p>
+        <p><strong>Lý do hủy:</strong> {{ appointment.cancellation_reason or 'Không có' }}</p>
+    </div>
+
+    <p>Nếu bạn có bất kỳ thắc mắc nào, vui lòng liên hệ với chúng tôi.</p>
+
+    <p>Trân trọng,<br>Đội ngũ hỗ trợ</p>
+</body>
+</html>
