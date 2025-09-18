@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <title>Hồ sơ bệnh nhân</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+  <style>
+    .card { margin-bottom: 20px; }
+    .label {
+      font-weight: bold;
+      display: inline-block;
+      min-width: 180px;
+    }
+    .status-select {
+      width: 140px;
+      font-size: 0.85rem;
+      padding: 2px 4px;
+    }
+  </style>
+</head>
+<body class="container my-4">
+
+  <!-- Tiêu đề -->
+  <div class="card p-3 d-flex justify-content-between align-items-center flex-row">
+    <h5 class="mb-0">
+      Hồ sơ bệnh nhân - {{ patient.first_name }} {{ patient.last_name }}
+    </h5>
+
+    {% if current_user.role.name == "PATIENT" %}
+      <a href="{{ url_for('patient_update', patient_id=patient.user_id) }}"
+         class="btn btn-dark btn-sm">Cập nhật thông tin</a>
+    {% endif %}
+  </div>
+
+  <!-- Thông tin cá nhân -->
+  <div class="card p-3">
+    <h6>Thông tin cá nhân</h6>
+    <div><span class="label">Họ và tên:</span> {{ patient.first_name }} {{ patient.last_name }}</div>
+    <div><span class="label">Giới tính:</span> {{ patient.gender.name if patient.gender else "" }}</div>
+    <div><span class="label">Ngày sinh:</span> {{ patient.date_of_birth }}</div>
+    <div><span class="label">Tuổi:</span> {{ patient.get_age() if patient.get_age else "" }}</div>
+  </div>
+  <div class="card p-3">
+    <div><span class ="label">Địa chỉ</span>{{patient.address}}</div>
+    <div><span class ="label">Email</span>{{patient.email}}</div>
+    <div><span class ="label">medical_history_summary</span>{{patient.medical_history_summary}}</div>
+    <div><span class ="label">Địa chỉ</span></div>
+
+  </div>
+  <!-- Lịch khám bệnh -->
+  <div class="card p-3">
+    <div class="d-flex justify-content-between align-items-center">
+      <h6>Lịch khám bệnh</h6>
+      <a href="/patients/{{ patient.user_id }}/appointments" class="btn btn-sm btn-outline-dark">Xem tất cả</a>
+    </div>
+    <table class="table table-sm mt-2">
+      <thead>
+        <tr>
+          <th>Ngày khám</th>
+          <th>Bác sĩ</th>
+          <th>Trạng thái</th>
+          <th class="text-center">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for a in appointments %}
+        <tr>
+          <td>{{ a.appointment_time.strftime("%Y-%m-%d %H:%M") }}</td>
+          <td>{{ a.doctor.first_name }} {{ a.doctor.last_name }}</td>
+          <td>
+            {% if current_user.role.name == "DOCTOR" %}
+              <select class="form-select form-select-sm status-select"
+                      data-appointment-id="{{ a.appointment_id }}">
+                <option value="Scheduled" {% if a.status.value =="Scheduled" %}selected{% endif %}>Chưa khám</option>
+                <option value="InProgress" {% if a.status.value =="InProgress" %}selected{% endif %}>Đang khám</option>
+                <option value="Completed" {% if a.status.value =="Completed" %}selected{% endif %}>Đã khám</option>
+              </select>
+            {% else %}
+              <span>
+                {% if a.status.value == "Scheduled" %}Chưa khám
+                {% elif a.status.value == "InProgress" %}Đang khám
+                {% elif a.status.value == "Completed" %}Đã khám
+                {% else %}{{ a.status.value }}{% endif %}
+              </span>
+            {% endif %}
+          </td>
+          <td class="text-center">
+            <a href="/appointments/{{ a.appointment_id }}" class="btn btn-sm btn-primary">Chi tiết</a>
+            <a href="diagnosis.html" class="btn btn-sm btn-warning">Chuẩn đoán</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" class="text-center text-muted">Chưa có lịch khám nào</td>
+        </tr>
+        {% endfor %}
+
+        <!-- Hàng cuối cùng -->
+        <tr>
+          <td colspan="3"></td>
+          <td class="text-end">
+            <button id="applyChanges" class="btn btn-success btn-sm">Áp dụng</button>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Bảo hiểm -->
+  <div class="card p-3">
+    <h6>Thông tin bảo hiểm</h6>
+    <div><span class="label">Mã BHYT / Số CMND:</span> {{ patient.patient.insurance_number or "" }}</div>
+  </div>
+
+  <!-- JS cập nhật trạng thái -->
+  <script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const statusChanges = {};
+
+    document.querySelectorAll(".status-select").forEach(select => {
+      select.addEventListener("change", () => {
+        statusChanges[select.dataset.appointmentId] = select.value;
+      });
+    });
+
+    document.getElementById("applyChanges").addEventListener("click", async () => {
+      for (const [appointmentId, newStatus] of Object.entries(statusChanges)) {
+        const response = await fetch(`/appointment/${appointmentId}/status`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: newStatus })
+        });
+        const result = await response.json();
+        if (!result.success) {
+          alert("Cập nhật thất bại cho lịch hẹn " + appointmentId + ": " + result.message);
+        }
+      }
+      alert("Đã áp dụng tất cả thay đổi!");
+      location.reload();
+    });
+  });
+  </script>
+
+</body>
+</html>
