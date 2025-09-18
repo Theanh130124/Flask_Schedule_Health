@@ -47,10 +47,6 @@ if __name__ == '__main__':
 #     db.create_all()   # Tạo tất cả bảng trong database
 
  # Nua push len nho chay 5000 nha
-<<<<<<< HEAD
 
- app.run(host="localhost", port=5001, debug=True)
-
-=======
     app.run(host="localhost", port=4000, debug=True)
->>>>>>> ed3d74782b899ea7888b2510c792dff09926ee2b
+
