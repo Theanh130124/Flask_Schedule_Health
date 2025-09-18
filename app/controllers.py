@@ -3,15 +3,17 @@ from datetime import datetime , date
 from math import ceil
 from flask_login import current_user, login_required, logout_user, login_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask import flash
+from flask import flash, current_app
 from app.form import LoginForm, ScheduleForm
 from flask import render_template , redirect , request , url_for  , session , jsonify
 from app.decorators import role_only
-
+# Thêm import
+from app.dao import dao_payment
+from app.vnpay_service import VNPay  # Import VNPay
 import math
-from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment
+from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment, dao_payment
 from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot, \
-    ConsultationType, Appointment, AppointmentStatus
+    ConsultationType, DoctorLicense
 
 import google.oauth2.id_token
 import google.auth.transport.requests
@@ -19,10 +21,9 @@ import requests
 from app import app , flow  #là import __init__
 from app.extensions import db
 from app.models import Hospital, Specialty, User, Doctor, RoleEnum
-from app.form import LoginForm, RegisterForm, PatientUpdateForm
-from app.dao import dao_authen, dao_user, dao_search, dao_patient, dao_healthrecord, dao_appointment
+from app.form import LoginForm, RegisterForm
+from app.dao import dao_authen, dao_user, dao_search
 from app.models import User
-from datetime import date
 
 
 
@@ -100,6 +101,7 @@ def home():
     specialties = Specialty.query.order_by(Specialty.name.asc()).all()
     return render_template('index.html', hospitals=hospitals, specialties=specialties)
 
+
 def login():
     mse = ""
     form = LoginForm()
@@ -111,10 +113,19 @@ def login():
             mse = "Tài khoản không tồn tại trong hệ thống"
         else:
             if dao_authen.check_password_md5(user, password):
+                # Kiểm tra nếu là doctor chưa kích hoạt
+                if user.role == RoleEnum.DOCTOR and not user.is_active:
+                    # Lưu thông tin user vào session thay vì đăng nhập
+                    session['pending_doctor_id'] = user.user_id
+                    session['pending_doctor_username'] = user.username
+                    return redirect(url_for('upload_license'))
+
+                # Các trường hợp khác: đăng nhập bình thường
                 login_user(user)
                 return redirect(url_for('index_controller'))
             else:
                 mse = "Mật khẩu không đúng"
+
     return render_template('login.html', form=form, mse=mse)
 
 def logout_my_user():
@@ -194,6 +205,52 @@ def oauth_callback():
         app.logger.error(f"OAuth Callback Error: {e}")
 
         return f"Login failed: {e}", 400
+
+
+@app.route('/upload_license', methods=['GET', 'POST'])
+def upload_license():
+    # Kiểm tra nếu có pending doctor trong session
+    if 'pending_doctor_id' not in session:
+        flash('Vui lòng đăng nhập trước', 'error')
+        return redirect(url_for('login'))
+
+    doctor_id = session['pending_doctor_id']
+
+    if request.method == 'POST':
+        # Xử lý upload license
+        license_number = request.form.get('license_number')
+        issuing_authority = request.form.get('issuing_authority')
+        issue_date = request.form.get('issue_date')
+        expiry_date = request.form.get('expiry_date')
+        scope_description = request.form.get('scope_description')
+
+        # Lưu license vào database
+        try:
+            new_license = DoctorLicense(
+                doctor_id=doctor_id,
+                license_number=license_number,
+                issuing_authority=issuing_authority,
+                issue_date=datetime.strptime(issue_date, '%Y-%m-%d').date(),
+                expiry_date=datetime.strptime(expiry_date, '%Y-%m-%d').date() if expiry_date else None,
+                scope_description=scope_description,
+                is_verified=False  # Chờ admin xác thực
+            )
+            db.session.add(new_license)
+            db.session.commit()
+
+            # Xóa session pending
+            session.pop('pending_doctor_id', None)
+            session.pop('pending_doctor_username', None)
+
+            flash('Đã gửi chứng chỉ thành công. Vui lòng chờ xác thực từ quản trị viên.', 'success')
+            return redirect(url_for('login'))
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Có lỗi xảy ra: {str(e)}', 'error')
+
+    return render_template('upload_license.html', doctor_id=doctor_id)
+
 def register():
     form = RegisterForm()
     mse = None
@@ -208,8 +265,8 @@ def register():
         date_of_birth = form.date_of_birth.data
         gender = form.gender.data
 
-
-        new_user = dao_user.create_user_with_role(
+        # Tạo user bằng dao_user
+        new_user = dao_user.create_user(
             username=username,
             email=email,
             password=password,
@@ -218,8 +275,7 @@ def register():
             phone_number=phone_number,
             address=address,
             date_of_birth=date_of_birth,
-            gender=gender,
-            role=RoleEnum.PATIENT   # mặc định là bệnh nhân
+            gender=gender
         )
 
         if new_user:
@@ -229,7 +285,6 @@ def register():
             mse = "Tên đăng nhập hoặc email đã tồn tại!"
 
     return render_template("register.html", form=form, mse=mse)
-
 
 #Lịch làm việc bác sĩ
 @app.route('/create_schedule', methods=['GET', 'POST'])
@@ -351,6 +406,18 @@ def available_slots():
                            total_pages=total_pages,
                            total_slots=total_slots)
 
+@app.route('/cancel_appointment/<int:appointment_id>', methods=['POST'])
+@login_required
+@role_only([RoleEnum.PATIENT])
+def cancel_appointment_route(appointment_id):
+    reason = request.form.get('reason')
+    success, message = dao_appointment.cancel_appointment(appointment_id, reason, cancelled_by_patient=True)
+    if success:
+        flash(message, "success")   # Hiện thông báo thành công
+    else:
+        flash(message, "danger")    # Hiện thông báo lỗi (ví dụ ít hơn 24h)
+    return redirect(url_for('appointment_detail', appointment_id=appointment_id))
+
 @app.route('/book_appointment/<int:slot_id>', methods=['GET', 'POST'])
 @login_required
 @role_only([RoleEnum.PATIENT])
@@ -465,155 +532,95 @@ def complete_appointment(appointment_id):
 
     return redirect(url_for('appointment_detail', appointment_id=appointment_id))
 
-@app.route("/patients/search")
+
+@app.route('/reschedule_appointment/<int:appointment_id>', methods=['GET', 'POST'])
 @login_required
-def patient_search():
+@role_only([RoleEnum.PATIENT])
+def reschedule_appointment(appointment_id):
+    appointment = dao_appointment.get_appointment_by_id(appointment_id)
 
-    return render_template("patient_search.html")
+    if not appointment:
+        flash('Lịch hẹn không tồn tại', 'error')
+        return redirect(url_for('my_appointments'))
 
-@app.route("/api/patients")
-@login_required
-def api_patients():
-    """
-    API trả về danh sách bệnh nhân theo từng filter (search + lọc ).
-    Dùng cho giao diện Patient Search (Bootstrap/React).
-    """
-    # Query string từ URL
-    q = (request.args.get("q", "") or "").strip()
-    phone = (request.args.get("phone", "") or "").strip()
-    active = request.args.get("active")  # "1", "0" hoặc None
-    inactive = request.args.get("inactive")
-    page = int(request.args.get("page", 1))
-    per_page = int(request.args.get("per_page", 50))
+    # Kiểm tra quyền
+    if appointment.patient_id != current_user.user_id:
+        flash('Bạn không có quyền sửa lịch hẹn này', 'error')
+        return redirect(url_for('my_appointments'))
 
-    query = User.query.filter(User.role == RoleEnum.PATIENT)
+    # Kiểm tra thời gian (trước 24 giờ)
+    current_time = datetime.now()
+    time_difference = appointment.appointment_time - current_time
+    if time_difference.total_seconds() < 24 * 3600:
+        flash('Chỉ có thể sửa lịch hẹn trước 24 giờ', 'error')
+        return redirect(url_for('appointment_detail', appointment_id=appointment_id))
 
-    # Lọc theo từ khóa
-    if q:
-        query = query.filter(
-            (User.first_name.ilike(f"%{q}%")) |
-            (User.last_name.ilike(f"%{q}%")) |
-            (User.username.ilike(f"%{q}%")) |
-            (User.email.ilike(f"%{q}%")) |
-            (User.phone_number.ilike(f"%{q}%"))
+    # Lấy danh sách slot khả dụng
+    available_slots = dao_available_slot.get_available_slots()
+
+    if request.method == 'POST':
+        new_slot_id = request.form.get('new_slot_id')
+        reason = request.form.get('reason', appointment.reason)
+
+        success, message = dao_appointment.reschedule_appointment(
+            appointment_id, new_slot_id, reason
         )
 
-    # Lọc theo trạng thái
-    if active == "1" and inactive != "1":
-        query = query.filter(User.is_active == True)
-    elif inactive == "1" and active != "1":
-        query = query.filter(User.is_active == False)
-    # lọc theo số điện thoại
-    if phone:
-        query = query.filter(User.phone_number.ilike(f"%{phone}%"))
+        if success:
+            flash(message, 'success')
+            return redirect(url_for('appointment_detail', appointment_id=appointment_id))
+        else:
+            flash(message, 'error')
 
-    # Phân trang
-    patients = (query.order_by(User.last_name.asc(), User.first_name.asc())
-                     .offset((page - 1) * per_page)
-                     .limit(per_page)
-                     .all())
+    return render_template('reschedule_appointment.html',
+                           appointment=appointment,
+                           available_slots=available_slots)
 
-    # Trả JSON
-    return jsonify([
-        {
-            "id": u.user_id,
-            "name": f"{u.first_name} {u.last_name}",
-            "age": u.get_age() if hasattr(u, "get_age") else None,
-            "gender": u.gender.name if u.gender else None,
-            "contact": u.phone_number,
-            "last_visit_date": u.last_visit_date.strftime("%Y-%m-%d") if getattr(u, "last_visit_date", None) else None
-        }
-        for u in patients
-    ])
 
-# chi tiết sổ tay khám bệnh của patient
-@app.route("/patients/<int:patient_id>")
+
+
+
+# Thêm routes mới
+@app.route('/payment/vnpay/<int:appointment_id>')
 @login_required
-def patient_detail(patient_id):
-    #lấy thông tin bệnh nhân @_@
-    patient=dao_patient.get_patient_by_id(patient_id)
+@role_only([RoleEnum.PATIENT])
+def vnpay_payment(appointment_id):
+    appointment = dao_appointment.get_appointment_by_id(appointment_id)
 
-    if not patient:
-        flash("không tìm thấy bệnh nhân", "danger")
-        return redirect(url_for("patient_search"))
-    # lấy hồ sơ khám bệnh của bệnh nhân
-    records=dao_healthrecord.get_records_by_patient(patient_id)
-    appointments = dao_appointment.get_patient_appointments(patient_id)
+    if not appointment or appointment.patient_id != current_user.user_id:
+        flash('Lịch hẹn không tồn tại', 'error')
+        return redirect(url_for('my_appointments'))
 
-    return render_template(
-        "patient_detail.html",
-        patient=patient,
-        records=records, #truyền recored và appointment vào temple
-        appointments=appointments
+    # Tạo payment
+    payment, message = dao_payment.create_vnpay_payment(appointment)
+    if not payment:
+        flash(message, 'error')
+        return redirect(url_for('appointment_detail', appointment_id=appointment_id))
+
+    # Tạo payment URL
+    vnpay = VNPay()
+    order_info = f"Thanh toan lich hen #{appointment_id}"
+    amount = float(appointment.invoice.amount)
+    ip_addr = request.remote_addr
+
+    payment_url = vnpay.create_payment_url(
+        order_info=order_info,
+        amount=amount,
+        order_id=payment.payment_id,
+        ip_addr=ip_addr
     )
 
-#update patients
-@app.route("/patient/<int:patient_id>/update", methods=["GET", "POST"])
-@login_required
-def patient_update(patient_id):
-    # Lấy thông tin bệnh nhân
-    patient=Patient.query.filter_by(patient_id=patient_id).first_or_404()
-    user=patient.user
-    # khởi tạo form với dữ liệu sẵn có .
-    form = PatientUpdateForm(
-        first_name=user.first_name,
-        last_name=user.last_name,
-        phone_number=user.phone_number,
-        address=user.address,
-        date_of_birth=user.date_of_birth,
-        gender=user.gender.name if user.gender else None,
-        medical_history_summary=patient.medical_history_summary
-    )
+    return redirect(payment_url)
 
-    if form.validate_on_submit():
-        #user_data cho bảng user
-        user_data = {
-            "first_name": form.first_name.data,
-            "last_name": form.last_name.data,
-            "phone_number": form.phone_number.data,
-            "address": form.address.data,
-            "date_of_birth": form.date_of_birth.data,
-            "gender": form.gender.data,
-        }
-        # patient_data cho bảng patient
-        patient_data = {
-            "medical_history_summary": form.medical_history_summary.data
-        }
 
-        # Gọi DAO để update
-        dao_patient.update_patient(patient_id, user_data, patient_data)
+@app.route('/payment/vnpay_return')
+def vnpay_return():
+    params = request.args.to_dict()
+    success, message = dao_payment.process_vnpay_callback(params)
 
-        flash("Cập nhật thông tin bệnh nhân thành công", "success")
-        return redirect(url_for("patient_detail", patient_id=patient_id))
-    return render_template("patient_update.html", form=form, patient=patient)
-# cập nhật trạng thái khám bệnh
-@app.route("/appointment/<int:appointment_id>/status", methods=["POST"])
-@login_required
-def update_appointment_status(appointment_id):
-    data = request.get_json()
-    new_status = data.get("status")
+    if success:
+        flash('Thanh toán thành công!', 'success')
+    else:
+        flash(f'Thanh toán thất bại: {message}', 'error')
 
-    # Map từ string frontend -> Enum
-    mapping = {
-        "Scheduled": AppointmentStatus.Scheduled,
-        "InProgress": AppointmentStatus.InProgress,
-        "Completed": AppointmentStatus.Completed,
-        "CancelledByPatient": AppointmentStatus.CancelledByPatient,
-        "CancelledByDoctor": AppointmentStatus.CancelledByDoctor,
-        # Nếu frontend gửi value tiếng Việt thì map thêm:
-        "Chưa khám": AppointmentStatus.Scheduled,
-        "Đang khám": AppointmentStatus.InProgress,
-        "Đã khám": AppointmentStatus.Completed,
-    }
-
-    if new_status not in mapping:
-        return jsonify({"success": False, "message": f"Trạng thái không hợp lệ: {new_status}"}), 400
-
-    try:
-        appointment = Appointment.query.get_or_404(appointment_id)
-        appointment.status = mapping[new_status]
-        db.session.commit()
-        return jsonify({"success": True, "new_status": appointment.status.value})
-    except Exception as e:
-        db.session.rollback()
-        return jsonify({"success": False, "message": str(e)}), 500
+    return redirect(url_for('my_appointments'))
