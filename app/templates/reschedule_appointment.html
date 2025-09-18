@@ -1,0 +1,59 @@
+{% extends 'layout/base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4 class="mb-0">Sửa lịch hẹn #{{ appointment.appointment_id }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="mb-4">
+                        <h5>Thông tin lịch hẹn hiện tại</h5>
+                        <p><strong>Bác sĩ:</strong> Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}</p>
+                        <p><strong>Ngày giờ:</strong> {{ appointment.appointment_time.strftime('%d/%m/%Y %H:%M') }}</p>
+                        <p><strong>Lý do khám:</strong> {{ appointment.reason or 'Không có thông tin' }}</p>
+                    </div>
+
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Lý do khám (có thể sửa)</label>
+                            <textarea class="form-control" id="reason" name="reason" rows="3">{{ appointment.reason or '' }}</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="new_slot_id" class="form-label">Chọn lịch hẹn mới</label>
+                            <select class="form-select" id="new_slot_id" name="new_slot_id" required>
+                                <option value="">-- Chọn lịch hẹn mới --</option>
+                                {% for slot in available_slots %}
+                                <option value="{{ slot.slot_id }}">
+                                    Dr. {{ slot.doctor.user.first_name }} {{ slot.doctor.user.last_name }} -
+                                    {{ slot.slot_date.strftime('%d/%m/%Y') }}
+                                    {{ slot.start_time.strftime('%H:%M') }} - {{ slot.end_time.strftime('%H:%M') }}
+                                    ({{ slot.doctor.specialty.name }} - {{ slot.doctor.hospital.name }})
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle me-2"></i>
+                            Khi sửa lịch hẹn, lịch hiện tại sẽ được hủy và lịch mới sẽ được đặt.
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <a href="{{ url_for('appointment_detail', appointment_id=appointment.appointment_id) }}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Quay lại
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-calendar-check me-2"></i>Xác nhận sửa lịch
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

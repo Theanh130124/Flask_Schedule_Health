@@ -40,13 +40,17 @@ app.add_url_rule("/appointment/<int:appointment_id>", "appointment_detail", cont
 app.add_url_rule("/my_appointments", "my_appointments", controllers.my_appointments)
 app.add_url_rule("/cancel_appointment/<int:appointment_id>", "cancel_appointment", controllers.cancel_appointment, methods=['POST'])
 app.add_url_rule("/complete_appointment/<int:appointment_id>", "complete_appointment", controllers.complete_appointment, methods=['POST'])
-
+app.add_url_rule("/upload_license", "upload_license", controllers.upload_license, methods=['GET', 'POST'])
 if __name__ == '__main__':
 
     # with app.app_context():
 #     db.create_all()   # Tạo tất cả bảng trong database
 
  # Nua push len nho chay 5000 nha
+<<<<<<< HEAD
 
  app.run(host="localhost", port=5001, debug=True)
 
+=======
+    app.run(host="localhost", port=4000, debug=True)
+>>>>>>> ed3d74782b899ea7888b2510c792dff09926ee2b
