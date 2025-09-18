@@ -134,10 +134,9 @@ def complete_appointment(appointment_id):
         db.session.rollback()
         return False, f"Lỗi khi cập nhật trạng thái: {str(e)}"
 
-<<<<<<< HEAD
+
 # ------------------sử lý với role DOCTOR ---------------------
-#
-=======
+
 
 def reschedule_appointment(appointment_id, new_slot_id, reason=None):
     try:
@@ -195,4 +194,4 @@ def reschedule_appointment(appointment_id, new_slot_id, reason=None):
     except Exception as e:
         db.session.rollback()
         return False, f"Lỗi khi sửa lịch hẹn: {str(e)}"
->>>>>>> ed3d74782b899ea7888b2510c792dff09926ee2b
+
