@@ -4,6 +4,16 @@
 <div class="container mt-4">
     <h2 class="mb-4">Lịch hẹn của tôi</h2>
 
+    <!-- Thông báo tổng số lịch hẹn -->
+    {% if total_appointments > 0 %}
+    <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <span>Tổng số: {{ total_appointments }} lịch hẹn</span>
+        {% if total_pages > 1 %}
+        <span class="badge bg-primary">Trang {{ current_page }}/{{ total_pages }}</span>
+        {% endif %}
+    </div>
+    {% endif %}
+
     {% if appointments %}
     <div class="table-responsive">
         <table class="table table-striped">
@@ -11,7 +21,6 @@
                 <tr>
                     <th>Mã lịch hẹn</th>
                     <th>Bác sĩ</th>
-                    <th>Chuyên khoa</th>
                     <th>Ngày giờ</th>
                     <th>Hình thức</th>
                     <th>Trạng thái</th>
@@ -23,7 +32,6 @@
                 <tr>
                     <td>#{{ appointment.appointment_id }}</td>
                     <td>Dr. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}</td>
-                    <td>{{ appointment.doctor.specialty.name }}</td>
                     <td>{{ appointment.appointment_time.strftime('%d/%m/%Y %H:%M') }}</td>
                     <td>{{ appointment.consultation_type.value }}</td>
                     <td>
@@ -43,11 +51,47 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Phân trang -->
+    {% if total_pages > 1 %}
+    <nav aria-label="Page navigation">
+        <ul class="pagination justify-content-center">
+            {% if current_page > 1 %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('my_appointments', page=current_page-1) }}" aria-label="Previous">
+                    <span aria-hidden="true">&laquo;</span>
+                </a>
+            </li>
+            {% endif %}
+
+            {% for page_num in range(1, total_pages + 1) %}
+                {% if page_num == current_page %}
+                <li class="page-item active">
+                    <span class="page-link">{{ page_num }}</span>
+                </li>
+                {% else %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('my_appointments', page=page_num) }}">{{ page_num }}</a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            {% if current_page < total_pages %}
+            <li class="page-item">
+                <a class="page-link" href="{{ url_for('my_appointments', page=current_page+1) }}" aria-label="Next">
+                    <span aria-hidden="true">&raquo;</span>
+                </a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    <!-- Kết thúc phân trang -->
+
     {% else %}
     <div class="alert alert-info">
         <i class="fas fa-info-circle me-2"></i>
         Bạn chưa có lịch hẹn nào.
-        <a href="{{ url_for('available_slots') }}" class="alert-link">Đặt lịch ngay</a>
     </div>
     {% endif %}
 </div>

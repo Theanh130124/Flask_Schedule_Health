@@ -213,3 +213,28 @@ def get_patient_by_userid(user_id):
     """Lấy thông tin patient bằng user_id"""
     return Patient.query.filter_by(patient_id=user_id).first()
 
+def get_patient_appointments_paginated(patient_id, page=1, per_page=6):
+    """Lấy danh sách lịch hẹn của bệnh nhân có phân trang"""
+    return (Appointment.query
+            .filter_by(patient_id=patient_id)
+            .order_by(Appointment.appointment_time.desc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all())
+
+def get_doctor_appointments_paginated(doctor_id, page=1, per_page=6):
+    """Lấy danh sách lịch hẹn của bác sĩ có phân trang"""
+    return (Appointment.query
+            .filter_by(doctor_id=doctor_id)
+            .order_by(Appointment.appointment_time.desc())
+            .offset((page - 1) * per_page)
+            .limit(per_page)
+            .all())
+
+def count_patient_appointments(patient_id):
+    """Đếm tổng số lịch hẹn của bệnh nhân"""
+    return Appointment.query.filter_by(patient_id=patient_id).count()
+
+def count_doctor_appointments(doctor_id):
+    """Đếm tổng số lịch hẹn của bác sĩ"""
+    return Appointment.query.filter_by(doctor_id=doctor_id).count()

@@ -523,17 +523,28 @@ def appointment_detail(appointment_id):
 @app.route('/my_appointments')
 @login_required
 def my_appointments():
+    page = request.args.get('page', 1, type=int)
+    per_page = 6  # Số lịch hẹn mỗi trang
+
     if current_user.role == RoleEnum.PATIENT:
-        appointments = dao_appointment.get_patient_appointments(current_user.user_id)
+        appointments = dao_appointment.get_patient_appointments_paginated(current_user.user_id, page, per_page)
+        total_appointments = dao_appointment.count_patient_appointments(current_user.user_id)
         template = 'patient_appointments.html'
     elif current_user.role == RoleEnum.DOCTOR:
-        appointments = dao_appointment.get_doctor_appointments(current_user.user_id)
+        appointments = dao_appointment.get_doctor_appointments_paginated(current_user.user_id, page, per_page)
+        total_appointments = dao_appointment.count_doctor_appointments(current_user.user_id)
         template = 'doctor_appointments.html'
     else:
         flash('Chức năng này chỉ dành cho bệnh nhân và bác sĩ', 'error')
         return redirect(url_for('home'))
 
-    return render_template(template, appointments=appointments)
+    total_pages = math.ceil(total_appointments / per_page) if total_appointments > 0 else 1
+
+    return render_template(template,
+                           appointments=appointments,
+                           current_page=page,
+                           total_pages=total_pages,
+                           total_appointments=total_appointments)
 
 
 @app.route('/cancel_appointment/<int:appointment_id>', methods=['POST'])
