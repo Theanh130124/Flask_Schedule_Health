@@ -40,7 +40,13 @@
     <div><span class="label">Ngày sinh:</span> {{ patient.date_of_birth }}</div>
     <div><span class="label">Tuổi:</span> {{ patient.get_age() if patient.get_age else "" }}</div>
   </div>
+  <div class="card p-3">
+    <div><span class ="label">Địa chỉ</span>{{patient.address}}</div>
+    <div><span class ="label">Email</span>{{patient.email}}</div>
+    <div><span class ="label">medical_history_summary</span>{{patient.medical_history_summary}}</div>
+    <div><span class ="label">Địa chỉ</span></div>
 
+  </div>
   <!-- Lịch khám bệnh -->
   <div class="card p-3">
     <div class="d-flex justify-content-between align-items-center">
