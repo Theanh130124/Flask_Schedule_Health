@@ -1,16 +1,21 @@
 {# templates/patient_search.html #}
 {% extends "layout/base.html" %}
 
-{% block title %}Patient Search{% endblock %}
+{% block title %}Tìm kiếm Bệnh nhân{% endblock %}
 
 {% block content %}
 <div class="container my-4">
+  <!-- Thông báo cho bác sĩ -->
+  <div class="alert alert-info">
+    <i class="fas fa-info-circle"></i>
+    <strong>Chức năng dành cho bác sĩ:</strong> Bạn chỉ có thể xem thông tin những bệnh nhân có lịch hẹn với bạn.
+  </div>
+
   <!-- Navigation Tabs -->
   <ul class="nav nav-tabs mb-4">
-    <li class="nav-item"><a class="nav-link active" href="#">Patient Search</a></li>
-    <li class="nav-item"><a class="nav-link" href="#">Patient Registration</a></li>
-    <li class="nav-item"><a class="nav-link" href="#">Appointment Scheduler</a></li>
-    <li class="nav-item"><a class="nav-link" href="#">Masters Management</a></li>
+    <li class="nav-item"><a class="nav-link active" href="#">Tìm kiếm Bệnh nhân</a></li>
+    <li class="nav-item"><a class="nav-link" href="{{url_for('my_appointments')}}">Lịch hẹn</a></li>
+
   </ul>
 
   <!-- Patient Search Form -->
@@ -18,63 +23,78 @@
     <h5>Tìm kiếm bệnh nhân</h5>
     <div class="row mb-3">
       <div class="col-10">
-        <input id="searchInput" type="text" class="form-control" placeholder="Search patients...">
+        <input id="searchInput" type="text" class="form-control" placeholder="Tìm theo tên, email, số điện thoại...">
       </div>
       <div class="col-2">
-        <button id="searchBtn" class="btn btn-dark w-100">Tìm kiếm chung</button>
+        <button id="searchBtn" class="btn btn-dark w-100">Tìm kiếm</button>
       </div>
     </div>
 
     <!-- Search Filters -->
-    <h6>Tìm kiếm</h6>
-    <div class="row mb-3">
-      <div class="col-md-3">
-        <input type="checkbox">ID
-        <input type="text" class="form-control mt-1" placeholder="Enter Patient ID">
-      </div>
-      <div class="col-md-3">
-        <input type="checkbox"> Tên
-        <input type="text" class="form-control mt-1" placeholder="First/Last/Full Name">
-      </div>
-      <div class="col-md-3">
-        <input type="checkbox"> Ngày sinh
-        <input type="date" class="form-control mt-1">
-      </div>
-      <div class="col-md-3">
-        <input type="checkbox" id="phoneChk"> Số điện thoại
-        <input type="text" id="phoneInput" class="form-control mt-1" placeholder="Enter phone number">
-      </div>
-    </div>
-
-    <div class="mb-3">
-      <label class="me-2"><input type="checkbox" id="activeChk" checked> Hoạt động</label>
-      <label class="me-2"><input type="checkbox" id="inactiveChk"> KHông hoạt động</label>
-    </div>
-
+    <h6>Bộ lọc nâng cao</h6>
     <div class="row mb-3">
       <div class="col-md-4">
-        Registration Date:
-        <input type="date" class="form-control mt-1">
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="filterPhone">
+          <label class="form-check-label" for="filterPhone">
+            <strong>Lọc theo số điện thoại</strong>
+          </label>
+        </div>
+        <input type="text" id="phoneInput" class="form-control" placeholder="Nhập số điện thoại" disabled>
       </div>
-      <div class="col-md-4 mt-4">
-        to <input type="date" class="form-control d-inline-block w-auto ms-2">
+
+      <div class="col-md-4">
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="filterStatus">
+          <label class="form-check-label" for="filterStatus">
+            <strong>Lọc theo trạng thái hẹn</strong>
+          </label>
+        </div>
+        <select id="statusSelect" class="form-control" disabled>
+          <option value="">Chọn trạng thái</option>
+          <option value="Scheduled">Đã đặt lịch</option>
+          <option value="Completed">Đã hoàn thành</option>
+          <option value="CancelledByPatient">Bệnh nhân hủy</option>
+          <option value="CancelledByDoctor">Bác sĩ hủy</option>
+          <option value="NoShow">Không đến khám</option>
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" id="filterDate">
+          <label class="form-check-label" for="filterDate">
+            <strong>Lọc theo ngày khám</strong>
+          </label>
+        </div>
+        <input type="date" id="dateInput" class="form-control" disabled>
       </div>
     </div>
 
-    <button id="applyFilterBtn" class="btn btn-dark">Apply Filters</button>
+    <button id="applyFilterBtn" class="btn btn-dark">Áp dụng Bộ lọc</button>
+    <button id="resetFilterBtn" class="btn btn-outline-secondary ms-2">Đặt lại</button>
   </div>
 
   <!-- Search Results -->
   <div class="card p-4 mt-4">
-    <h5>Tìm kiếm bệnh nhân</h5>
-    <table class="table table-bordered mt-3">
+    <h5>Kết quả tìm kiếm</h5>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+      <span id="resultCount" class="text-muted">Đang tải...</span>
+      <div class="btn-group">
+        <button class="btn btn-outline-secondary btn-sm" onclick="exportData()">
+          <i class="fas fa-download"></i> Xuất Excel
+        </button>
+      </div>
+    </div>
+
+    <table class="table table-bordered table-hover mt-3">
       <thead class="table-light">
         <tr>
           <th>Tên bệnh nhân</th>
           <th>Tuổi</th>
           <th>Giới tính</th>
           <th>Số điện thoại</th>
-          <th>Lần gần nhất khám bệnh</th>
+          <th>Trạng thái hẹn</th>
           <th>Thao tác</th>
         </tr>
       </thead>
@@ -83,74 +103,258 @@
       </tbody>
     </table>
 
-    <!-- Pagination simple -->
-    <nav>
+    <!-- Pagination -->
+    <nav aria-label="Page navigation">
       <ul class="pagination justify-content-center" id="pagination">
       </ul>
     </nav>
   </div>
 </div>
 
+<style>
+  .status-badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .status-scheduled {
+    background-color: #ffecb3;
+    color: #f57c00;
+  }
+  .status-completed {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+  }
+  .status-cancelled {
+    background-color: #ffcdd2;
+    color: #c62828;
+  }
+  .status-noshow {
+    background-color: #f5f5f5;
+    color: #616161;
+  }
+  .action-btn {
+    padding: 5px 10px;
+    font-size: 14px;
+  }
+  .filter-active {
+    background-color: #f8f9fa;
+    border-left: 4px solid #0d6efd;
+  }
+</style>
+
 <script>
   (function(){
     let currentPage = 1;
     const perPage = 10;
+    let totalPatients = 0;
+    let activeFilters = {
+      phone: false,
+      status: false,
+      date: false
+    };
+
+    // Kích hoạt/vô hiệu hóa các trường nhập liệu dựa trên checkbox
+    function toggleFilterInputs() {
+      document.getElementById('phoneInput').disabled = !document.getElementById('filterPhone').checked;
+      document.getElementById('statusSelect').disabled = !document.getElementById('filterStatus').checked;
+      document.getElementById('dateInput').disabled = !document.getElementById('filterDate').checked;
+
+      // Cập nhật trạng thái filter
+      activeFilters.phone = document.getElementById('filterPhone').checked;
+      activeFilters.status = document.getElementById('filterStatus').checked;
+      activeFilters.date = document.getElementById('filterDate').checked;
+
+      // Thêm/xóa lớp CSS để làm nổi bật filter đang active
+      const filterContainers = document.querySelectorAll('.col-md-4');
+      filterContainers[0].classList.toggle('filter-active', activeFilters.phone);
+      filterContainers[1].classList.toggle('filter-active', activeFilters.status);
+      filterContainers[2].classList.toggle('filter-active', activeFilters.date);
+    }
+
+    // Đặt lại bộ lọc
+    function resetFilters() {
+      document.getElementById('filterPhone').checked = false;
+      document.getElementById('filterStatus').checked = false;
+      document.getElementById('filterDate').checked = false;
+      document.getElementById('phoneInput').value = '';
+      document.getElementById('statusSelect').value = '';
+
+      // Đặt lại ngày về hiện tại
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('dateInput').value = today;
+
+      toggleFilterInputs();
+      loadPatients(1);
+    }
 
     async function loadPatients(page=1){
       const q = document.getElementById("searchInput").value.trim();
-      const active = document.getElementById("activeChk").checked ? "1" : "";
-      const inactive = document.getElementById("inactiveChk").checked ? "1" : "";
-      const phoneChk = document.getElementById("phoneChk").checked;
-      const phoneNumber = phoneChk ? document.getElementById("phoneInput").value.trim() : "";
+
+      // Chỉ lấy giá trị nếu filter được kích hoạt
+      const phoneNumber = activeFilters.phone ? document.getElementById("phoneInput").value.trim() : "";
+      const statusValue = activeFilters.status ? document.getElementById("statusSelect").value : "";
+      const dateValue = activeFilters.date ? document.getElementById("dateInput").value : "";
 
       const tbody = document.getElementById("patientTableBody");
-      tbody.innerHTML = `<tr><td colspan="6" class="text-center">Loading...</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" class="text-center">Đang tải...</td></tr>`;
 
       try {
-        // NOTE: your API currently returns an array (no total). We consume that.
-        const res = await fetch(`/api/patients?q=${encodeURIComponent(q)}&phone=${encodeURIComponent(phoneNumber)}&active=${active}&inactive=${inactive}&page=${page}&per_page=${perPage}`);
-        if(!res.ok) throw new Error("Network error");
-        const data = await res.json(); // EXPECT: array of patients
+        let apiUrl;
+        if (statusValue && activeFilters.status) {
+          // Lọc theo trạng thái
+          apiUrl = `/api/patients/filter-by-status/${statusValue}?q=${encodeURIComponent(q)}&phone=${encodeURIComponent(phoneNumber)}&date=${dateValue}&page=${page}&per_page=${perPage}`;
+        } else {
+          // Tìm kiếm thông thường với các bộ lọc được áp dụng
+          apiUrl = `/api/patients?q=${encodeURIComponent(q)}&phone=${encodeURIComponent(phoneNumber)}&date=${dateValue}&page=${page}&per_page=${perPage}`;
+        }
 
-        // If your API later changes to return {patients, total}, adapt here.
-        const patients = Array.isArray(data) ? data : (data.patients || []);
+        const res = await fetch(apiUrl);
+        if(!res.ok) throw new Error("Lỗi kết nối mạng");
+
+        const data = await res.json();
+        console.log("API Response:", data); // Debug: xem cấu trúc dữ liệu thực tế
+
+        const patients = data.patients || data;
+        totalPatients = data.pagination ? data.pagination.total : patients.length;
+
         tbody.innerHTML = "";
 
         if (patients.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="6" class="text-center">No patients found</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="6" class="text-center">Không tìm thấy bệnh nhân nào</td></tr>`;
         } else {
           patients.forEach(p => {
             const tr = document.createElement("tr");
+
+            // HIỂN THỊ TRẠNG THÁI HẸN - Xử lý cả số và enum
+            let statusHTML = 'Chưa có lịch hẹn';
+
+            // Kiểm tra nhiều trường có thể chứa thông tin trạng thái
+            if (p.appointment_status) {
+              statusHTML = getAppointmentStatusBadge(p.appointment_status);
+            }
+            else if (p.status) {
+              statusHTML = getAppointmentStatusBadge(p.status);
+            }
+            else if (p.current_appointment_status) {
+              statusHTML = getAppointmentStatusBadge(p.current_appointment_status);
+            }
+            else if (p.latest_appointment_status) {
+              statusHTML = getAppointmentStatusBadge(p.latest_appointment_status);
+            }
+
             tr.innerHTML = `
-              <td>${p.name || ''}</td>
-              <td>${p.age ?? ''}</td>
-              <td>${p.gender ?? ''}</td>
-              <td>${p.contact ?? ''}</td>
-              <td>${p.last_visit_date ?? ''}</td>
+              <td>${p.name || p.full_name || 'N/A'}</td>
+              <td>${p.age ?? 'N/A'}</td>
+              <td>${p.gender ? (p.gender === 'MALE' ? 'Nam' : 'Nữ') : 'N/A'}</td>
+              <td>${p.contact || p.phone_number || p.phone || 'N/A'}</td>
+              <td>${statusHTML}</td>
               <td>
-                <a class="btn btn-outline-dark btn-sm" href="/patients/${p.id}">👁 Chi Tiết</a>
+                <a class="btn btn-outline-primary btn-sm action-btn" href="/patient/${p.id || p.patient_id || p.user_id}" title="Xem chi tiết">
+                  <i class="fas fa-eye"></i> Chi tiết
+                </a>
               </td>
             `;
             tbody.appendChild(tr);
           });
         }
 
-        // build simple prev/next pagination using returned length (we can't know total pages if backend doesn't send total)
-        const pagination = document.getElementById("pagination");
-        pagination.innerHTML = `
-          <li class="page-item ${page===1?'disabled':''}">
-            <a class="page-link" href="#" onclick="changePage(${page-1});return false;">Trang</a>
-          </li>
-          <li class="page-item active"><span class="page-link">${page}</span></li>
-          <li class="page-item ${patients.length < perPage ? 'disabled' : ''}">
-            <a class="page-link" href="#" onclick="changePage(${page+1});return false;">>></a>
-          </li>
-        `;
+        // Cập nhật số lượng kết quả
+        document.getElementById("resultCount").textContent = `Tìm thấy ${totalPatients} bệnh nhân`;
+
+        // Hiển thị phân trang
+        updatePagination(page, totalPatients);
 
       } catch (err) {
-        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error loading patients: ${err.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Lỗi tải dữ liệu: ${err.message}</td></tr>`;
         console.error(err);
       }
+    }
+
+    // Hàm hiển thị badge trạng thái cho appointment - XỬ LÝ CẢ SỐ VÀ ENUM
+    function getAppointmentStatusBadge(status) {
+      if (!status) return 'Chưa có dữ liệu';
+
+      // Xử lý cả số và enum
+      let statusValue;
+
+      if (typeof status === 'number') {
+        // Nếu là số, ánh xạ sang enum value
+        switch(status) {
+          case 1: statusValue = 'Scheduled'; break;
+          case 2: statusValue = 'Completed'; break;
+          case 3: statusValue = 'CancelledByPatient'; break;
+          case 4: statusValue = 'CancelledByDoctor'; break;
+          case 5: statusValue = 'NoShow'; break;
+          default: statusValue = String(status);
+        }
+      }
+      else if (typeof status === 'object' && status !== null) {
+        // Nếu là object enum, lấy giá trị
+        statusValue = status.value || status.name || status.status || Object.values(status)[0];
+      } else {
+        statusValue = status;
+      }
+
+      const statusStr = String(statusValue).toLowerCase();
+
+      if (statusStr.includes('scheduled') || statusStr === '1') {
+        return `<span class="status-badge status-scheduled">Đang chờ khám</span>`;
+      }
+      else if (statusStr.includes('completed') || statusStr === '2') {
+        return `<span class="status-badge status-completed">Đã khám</span>`;
+      }
+      else if (statusStr.includes('cancelled') || statusStr === '3' || statusStr === '4') {
+        return `<span class="status-badge status-cancelled">Đã hủy</span>`;
+      }
+      else if (statusStr.includes('noshow') || statusStr === '5') {
+        return `<span class="status-badge status-noshow">Không đến</span>`;
+      }
+
+      // Fallback: hiển thị giá trị gốc để debug
+      console.log("Unknown status:", statusValue);
+      return `Trạng thái: ${statusValue}`;
+    }
+
+    function updatePagination(page, total) {
+      const pagination = document.getElementById("pagination");
+      const totalPages = Math.ceil(total / perPage);
+
+      let paginationHTML = '';
+
+      // Nút Previous
+      paginationHTML += `
+        <li class="page-item ${page === 1 ? 'disabled' : ''}">
+          <a class="page-link" href="#" onclick="changePage(${page - 1}); return false;">
+            <i class="fas fa-chevron-left"></i>
+          </a>
+        </li>
+      `;
+
+      // Các trang
+      for (let i = 1; i <= totalPages; i++) {
+        if (i === page || i === page - 1 || i === page + 1 || i === 1 || i === totalPages) {
+          paginationHTML += `
+            <li class="page-item ${i === page ? 'active' : ''}">
+              <a class="page-link" href="#" onclick="changePage(${i}); return false;">${i}</a>
+            </li>
+          `;
+        } else if (i === page - 2 || i === page + 2) {
+          paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
+        }
+      }
+
+      // Nút Next
+      paginationHTML += `
+        <li class="page-item ${page === totalPages ? 'disabled' : ''}">
+          <a class="page-link" href="#" onclick="changePage(${page + 1}); return false;">
+            <i class="fas fa-chevron-right"></i>
+          </a>
+        </li>
+      `;
+
+      pagination.innerHTML = paginationHTML;
     }
 
     // expose changePage to inline onclick in pagination
@@ -160,9 +364,35 @@
       loadPatients(page);
     }
 
+    window.exportData = function() {
+      alert('Chức năng xuất Excel sẽ được triển khai sau');
+    }
+
     document.addEventListener("DOMContentLoaded", function(){
-      document.getElementById("searchBtn").addEventListener("click", ()=> loadPatients(1));
-      document.getElementById("applyFilterBtn").addEventListener("click", ()=> loadPatients(1));
+      // Thiết lập ngày hiện tại cho input date
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById("dateInput").value = today;
+
+      // Thiết lập sự kiện cho các checkbox filter
+      document.getElementById("filterPhone").addEventListener("change", toggleFilterInputs);
+      document.getElementById("filterStatus").addEventListener("change", toggleFilterInputs);
+      document.getElementById("filterDate").addEventListener("change", toggleFilterInputs);
+
+      // Thiết lập sự kiện cho nút áp dụng và đặt lại
+      document.getElementById("applyFilterBtn").addEventListener("click", () => loadPatients(1));
+      document.getElementById("resetFilterBtn").addEventListener("click", resetFilters);
+
+      document.getElementById("searchBtn").addEventListener("click", () => loadPatients(1));
+
+      // Auto search khi nhập
+      document.getElementById("searchInput").addEventListener("keypress", (e) => {
+        if (e.key === 'Enter') loadPatients(1);
+      });
+
+      // Khởi tạo trạng thái filter
+      toggleFilterInputs();
+
+      // Load dữ liệu ban đầu
       loadPatients(1);
     });
   })();

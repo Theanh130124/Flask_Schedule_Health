@@ -1,200 +1,24 @@
-{% extends "layout/base.html" %} {% block title %}Chi tiết bác sĩ{% endblock %}
-{% block content %}
-<div class="container py-4">
-  <a
-    href="{{ request.referrer or url_for('home') }}"
-    class="btn btn-primary mb-3"
-  >
-    &larr; Quay lại
-  </a>
-
-  <div class="row g-4">
-    <div class="col-12 col-lg-4">
-      <div class="card shadow-sm">
-        {% if d.user and d.user.avatar %}
-        <img
-          class="card-img-top object-fit-cover"
-          style="height: 260px"
-          src="{{ d.user.avatar }}"
-          alt="Ảnh bác sĩ"
-        />
-        {% endif %}
-        <div class="card-body">
-          <h4 class="mb-1">
-            Bác sĩ {{ (d.user.first_name ~ ' ' ~ d.user.last_name)|trim }}
-          </h4>
-
-          <div class="text-muted">
-            <i class="bi bi-hospital me-1"></i>
-            {{ d.hospital.name if d.hospital else "—" }}
-          </div>
-
-          <div class="mt-2">
-            <span class="badge bg-info-subtle text-info">
-              {{ d.specialty.name if d.specialty else "Chưa có chuyên khoa" }}
-            </span>
-          </div>
-
-          <hr />
-
-          <ul class="list-unstyled small mb-0">
-            <li>
-              <strong>Email:</strong> {{ d.user.email if d.user else "—" }}
-            </li>
-            <li>
-              <strong>Điện thoại:</strong> {{ d.user.phone_number if d.user else
-              "—" }}
-            </li>
-            <li>
-              <strong>Ngày sinh:</strong> {{ d.user.date_of_birth or "—" }}
-            </li>
-            <li>
-              <strong>Giới tính:</strong> {{ d.user.gender.value if d.user and
-              d.user.gender else "—" }}
-            </li>
-            <li>
-              <strong>Địa chỉ:</strong> {{ d.user.address if d.user else "—" }}
-            </li>
-            <li>
-              <strong>Kinh nghiệm:</strong> {{ d.years_experience or "—" }} năm
-            </li>
-            <li>
-              <strong>Phí khám:</strong>
-              {% if d.consultation_fee is not none %} {{
-              "{:,.0f}".format(d.consultation_fee) }} đ {% else %}—{% endif %}
-            </li>
-            <li>
-              <strong>Đánh giá TB:</strong> {{ avg_rating if avg_rating is not
-              none else "Chưa có" }}
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <!-- Cột phải: chi tiết -->
-    <div class="col-12 col-lg-8">
-      <!-- Giới thiệu -->
-      <div class="card shadow-sm mb-3">
-        <div class="card-header fw-semibold">Giới thiệu</div>
-        <div class="card-body">
-          <p class="mb-0">{{ d.bio or "Chưa cập nhật." }}</p>
-        </div>
-      </div>
-
-      <!-- Bệnh viện -->
-      <div class="card shadow-sm mb-3">
-        <div class="card-header fw-semibold">Bệnh viện</div>
-        <div class="card-body">
-          <div class="mb-1">
-            <strong>Tên:</strong> {{ d.hospital.name if d.hospital else "—" }}
-          </div>
-          <div class="mb-1">
-            <strong>Địa chỉ:</strong> {{ d.hospital.address if d.hospital else
-            "—" }}
-          </div>
-          <div class="mb-1">
-            <strong>Điện thoại:</strong> {{ d.hospital.phone_number if
-            d.hospital and d.hospital.phone_number else "—" }}
-          </div>
-          <div class="mb-1">
-            <strong>Bảo hiểm:</strong>
-            {% if d.hospital and d.hospital.accepts_insurance %}
-            <span class="badge bg-success">Có bảo hiểm</span>
-            {% else %}
-            <span class="badge bg-secondary">Không bảo hiểm</span>
-            {% endif %}
-          </div>
-        </div>
-      </div>
-
-      <!-- Chuyên khoa & Trình độ -->
-      <div class="card shadow-sm mb-3">
-        <div class="card-header fw-semibold">Chuyên khoa & Trình độ</div>
-        <div class="card-body">
-          <div class="mb-1">
-            <strong>Chuyên khoa:</strong> {{ d.specialty.name if d.specialty
-            else "—" }}
-          </div>
-          {% if d.specialty and d.specialty.description %}
-          <div class="small text-muted mb-2">{{ d.specialty.description }}</div>
-          {% endif %}
-          <div class="mb-1">
-            <strong>Trình độ:</strong> {{ d.educational_level or "—" }}
-          </div>
-        </div>
-      </div>
-
-      <!-- Chứng chỉ -->
-      {% set _licenses = licenses if licenses is defined else d.licenses %}
-      <div class="card shadow-sm mb-3">
-        <div class="card-header fw-semibold">Chứng chỉ hành nghề</div>
-        <div class="card-body p-0">
-          {% if _licenses and _licenses|length > 0 %}
-          <table class="table table-sm mb-0">
-            <thead>
-              <tr>
-                <th>Số hiệu</th>
-                <th>Nơi cấp</th>
-                <th>Ngày cấp</th>
-                <th>Hết hạn</th>
-                <th>Phạm vi hành nghề</th>
-              </tr>
-            </thead>
-            <tbody>
-              {% for lic in _licenses %}
-              <tr>
-                <td>{{ lic.license_number or "—" }}</td>
-                <td>{{ lic.issuing_authority or "—" }}</td>
-                <td>
-                  {{ lic.issue_date.strftime('%d/%m/%Y') if lic.issue_date else
-                  "—" }}
-                </td>
-                <td>
-                  {{ lic.expiry_date.strftime('%d/%m/%Y') if lic.expiry_date
-                  else "—" }}
-                </td>
-                <td>{{ lic.scope_description or "—" }}</td>
-              </tr>
-              {% endfor %}
-            </tbody>
-          </table>
-          {% else %}
-          <div class="p-3 text-muted">Chưa có dữ liệu chứng chỉ.</div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Đánh giá -->
-      {% set _reviews = reviews if reviews is defined else d.reviews %}
-      <div class="card shadow-sm">
-        <div class="card-header fw-semibold">Đánh giá</div>
-        <div class="card-body p-0">
-          {% if _reviews and _reviews|length > 0 %}
-          <div class="p-3 border-bottom">
-            <strong>Trung bình:</strong> {{ avg_rating }} ⭐ ({{ _reviews|length
-            }} đánh giá)
-          </div>
-          <ul class="list-group list-group-flush">
-            {% for r in _reviews %}
-            <li class="list-group-item">
-              <div class="d-flex justify-content-between">
-                <strong>⭐ {{ r.rating }}</strong>
-                <span class="small text-muted">{{ r.review_date or "" }}</span>
-              </div>
-              <div>{{ r.comment or "" }}</div>
-            </li>
-            {% endfor %}
-          </ul>
-          {% else %}
-          <div class="p-3 text-muted">Chưa có đánh giá.</div>
-          {% endif %}
-        </div>
-      </div>
-    </div>
-    <!-- /col-right -->
-  </div>
-  <!-- /row -->
-</div>
-<!-- /container -->
-{% endblock %}
+<!-- Thay vì gọi trực tiếp hàm DAO, hãy truyền appointments từ controller -->
+{% for appointment in appointments %}
+<tr>
+  <td>{{ appointment.appointment_time.strftime("%d/%m/%Y %H:%M") }}</td>
+  <td>
+    {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}
+  </td>
+  <td>
+    {% if appointment.status.name == "Scheduled" %}
+      <span class="status-badge status-scheduled">Đã đặt lịch</span>
+    {% elif appointment.status.name == "Completed" %}
+      <span class="status-badge status-completed">Đã hoàn thành</span>
+    {% else %}
+      <span class="status-badge status-cancelled">Đã hủy</span>
+    {% endif %}
+  </td>
+  <td class="text-center">
+    <a href="{{ url_for('appointment_detail', appointment_id=appointment.appointment_id) }}"
+       class="btn btn-sm btn-primary">
+      <i class="fas fa-eye me-1"></i>Chi tiết
+    </a>
+  </td>
+</tr>
+{% endfor %}

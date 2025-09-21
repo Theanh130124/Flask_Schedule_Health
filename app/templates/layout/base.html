@@ -118,8 +118,6 @@
                 </a>
               </li>
 
-
-
               <li class="nav-item w-100 my-3">
                 <a
                   href="/my_appointments"
@@ -129,7 +127,19 @@
                   <i class="fa-solid fa-list"></i> Xem lịch hẹn của tôi
                 </a>
               </li>
+
+              <!-- Thêm mục Hồ sơ sức khỏe cho Patient -->
+              <li class="nav-item w-100 my-3">
+                <a
+                  href="{{ url_for('patient_detail', patient_id=current_user.user_id) }}"
+                  class="nav-link align-middle text-white"
+                  style="font-size: 16px"
+                >
+                  <i class="fa-solid fa-file-medical"></i> Hồ sơ sức khỏe
+                </a>
+              </li>
               {% endif %}
+
               {% if current_user.role.name == 'DOCTOR'  %}
               <li class="nav-item w-100 my-3">
                 <a
@@ -140,16 +150,20 @@
                   <i class="fa-solid fa-list"></i> Lịch hẹn bệnh nhân
                 </a>
               </li>
-                 {% endif %}
+              {% endif %}
+
+              {% if current_user.role.name == 'DOCTOR' %}
               <li class="nav-item w-100 my-3">
                 <a
-                  href="/teacher/assignment"
+                  href="{{ url_for('patient_search') }}"
                   class="nav-link align-middle text-white"
                   style="font-size: 16px"
                 >
-                  <i class="fa-solid fa-plus"></i>........
+                  <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm bệnh nhân
                 </a>
               </li>
+              {% endif %}
+
               <li class="nav-item w-100 my-3">
                 <a
                   href="/class/edit"
@@ -171,7 +185,6 @@
               </li>
 
               <li class="nav-item w-100 my-3">
-                <!--                                                Tìm app.route-->
                 <a
                   href="/acc_info"
                   class="nav-link align-middle text-white"

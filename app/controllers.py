@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime , date
+from datetime import datetime , date, timedelta
 from math import ceil
 from sqlalchemy.orm import joinedload, subqueryload
 from flask_login import current_user, login_required, logout_user, login_user
@@ -12,7 +12,7 @@ from app.decorators import role_only
 from app.dao import dao_payment
 from app.vnpay_service import VNPay  # Import VNPay
 import math
-from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment, dao_payment
+from app.dao import dao_authen, dao_search, dao_doctor, dao_available_slot, dao_appointment, dao_payment, dao_patient, dao_healthrecord
 from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, DayOfWeekEnum, HealthRecord, AvailableSlot, \
     ConsultationType, DoctorLicense, Appointment, Review, AppointmentStatus
 
@@ -21,10 +21,10 @@ import google.auth.transport.requests
 import requests
 from app import app , flow  #là import __init__
 from app.extensions import db
-from app.models import Hospital, Specialty, User, Doctor, RoleEnum
+from app.models import Hospital, Specialty, User, Doctor, RoleEnum, GenderEnum
 from app.form import LoginForm, RegisterForm
 from app.dao import dao_authen, dao_user, dao_search
-from app.models import User
+
 
 
 
@@ -690,3 +690,364 @@ def vnpay_return():
         flash(f'Thanh toán thất bại: {message}', 'error')
 
     return redirect(url_for('my_appointments'))
+
+
+@app.route("/api/patients")
+@login_required
+@role_only([RoleEnum.DOCTOR])
+def api_patients():
+    """
+    API trả về danh sách bệnh nhân mà bác sĩ đã từng có appointment
+    """
+    # Query string từ URL
+    q = (request.args.get("q", "") or "").strip()
+    phone = (request.args.get("phone", "") or "").strip()
+    active = request.args.get("active")
+    inactive = request.args.get("inactive")
+    page = int(request.args.get("page", 1))
+    per_page = int(request.args.get("per_page", 50))
+
+    # Lấy danh sách bệnh nhân từ DAO
+    patients, total = dao_patient.get_patients_by_doctor(
+        doctor_id=current_user.user_id,
+        page=page,
+        per_page=per_page,
+        filters={
+            'q': q,
+            'phone': phone,
+            'active': active,
+            'inactive': inactive
+        }
+    )
+
+    # Trả JSON với thông tin đầy đủ
+    patient_data = []
+    for patient in patients:
+        status_count = dao_patient.get_appointment_status_count(patient.user_id, current_user.user_id)
+
+        patient_data.append({
+            "id": patient.user_id,
+            "name": f"{patient.first_name} {patient.last_name}",
+            "age": dao_patient.calculate_age(patient.date_of_birth),
+            "gender": patient.gender.name if patient.gender else None,
+            "contact": patient.phone_number,
+            "last_visit_date": dao_patient.get_last_visit_date(patient.user_id, current_user.user_id),
+            "appointment_status": status_count,
+            "total_appointments": sum(status_count.values())
+        })
+
+    return jsonify(patient_data)
+
+
+# lọc bệnh nhân theo trạng thái trong lịch hẹn
+@app.route("/api/patients/filter-by-status/<status>")
+@login_required
+@role_only([RoleEnum.DOCTOR])
+def api_patients_filter_by_status(status):
+    try:
+        status_enum = AppointmentStatus[status]
+    except KeyError:
+        return jsonify({"error": "Trạng thái không hợp lệ"}), 400
+
+    page = int(request.args.get("page", 1))
+    per_page = int(request.args.get("per_page", 50))
+
+    patients, total = dao_patient.get_patients_by_doctor_with_status_filter(
+        doctor_id=current_user.user_id,
+        status_filter=status_enum,
+        page=page,
+        per_page=per_page
+    )
+
+    # Trả JSON với thông tin đầy đủ (THIẾU PHẦN NÀY)
+    patient_data = []
+    for patient in patients:
+        status_count = dao_patient.get_appointment_status_count(patient.user_id, current_user.user_id)
+
+        patient_data.append({
+            "id": patient.user_id,
+            "name": f"{patient.first_name} {patient.last_name}",
+            "age": dao_patient.calculate_age(patient.date_of_birth),
+            "gender": patient.gender.name if patient.gender else None,
+            "contact": patient.phone_number,
+            "last_visit_date": dao_patient.get_last_visit_date(patient.user_id, current_user.user_id),
+            "appointment_status": status_count,
+            "total_appointments": sum(status_count.values())
+        })
+
+    # Thêm thông tin phân trang (optional)
+    response = {
+        "patients": patient_data,
+        "pagination": {
+            "page": page,
+            "per_page": per_page,
+            "total": total,
+            "pages": math.ceil(total / per_page) if total > 0 else 1
+        }
+    }
+
+    return jsonify(response)
+# hiển thị trang làm việc của bác sĩ
+@app.route("/patients/search")
+@login_required
+@role_only([RoleEnum.DOCTOR])
+def patient_search():
+
+    return render_template("patient_search.html")
+
+# hồ sơ bệnh nhân
+@app.route('/patient/<int:patient_id>')
+@login_required
+def patient_detail(patient_id):
+    # Sử dụng DAO để lấy thông tin
+    user = dao_patient.get_patient_by_id(patient_id)
+    if not user:
+        flash('Bệnh nhân không tồn tại', 'error')
+        return redirect(url_for('home'))
+
+    patient = user.patient
+
+    # Lấy danh sách appointments gần đây (SỬA Ở ĐÂY)
+    appointments_result = dao_appointment.get_patient_appointments_paginated(patient_id, page=1, per_page=5)
+    appointments = appointments_result.items if appointments_result else []
+    # lấy healthrecord
+    health_records=dao_healthrecord.get_records_by_patient(patient_id, limit=10)
+
+    # Kiểm tra quyền truy cập
+    if current_user.role.name == "DOCTOR":
+        has_access = dao_patient.has_doctor_with_patient(current_user.user_id, patient_id)
+        if not has_access:
+            flash('Bạn không có quyền xem thông tin bệnh nhân này', 'error')
+            return redirect(url_for('patient_search'))
+
+    elif current_user.role.name == "PATIENT":
+        if current_user.user_id != patient_id:
+            flash('Bạn chỉ có thể xem thông tin của chính mình', 'error')
+            return redirect(url_for('home'))
+
+    return render_template("patient_detail.html",
+                           patient=patient,
+                           user=user,
+                           appointments=appointments,
+                           health_records=health_records,
+                           calculate_age=dao_patient.calculate_age,
+                           now=datetime.now())
+
+# sử lý chuẩn đoán
+
+
+# ... các import và route khác ...
+
+@app.route('/api/update-diagnosis', methods=['POST'])
+@login_required
+@role_only([RoleEnum.DOCTOR])
+def update_diagnosis():
+    try:
+        # Nhận dữ liệu JSON từ frontend
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'success': False, 'message': 'Dữ liệu không hợp lệ'})
+
+        appointment_id = data.get('appointment_id')
+        patient_id = data.get('patient_id')
+        doctor_id = data.get('doctor_id')
+        symptoms = data.get('symptoms', '')
+        diagnosis = data.get('diagnosis', '')
+        prescription = data.get('prescription', '')
+        notes = data.get('notes', '')
+        record_id = data.get('record_id')
+
+        # KIỂM TRA QUYỀN TRUY CẬP
+        if int(doctor_id) != current_user.user_id:
+            return jsonify({'success': False, 'message': 'Không có quyền thực hiện chuẩn đoán'})
+
+        # TÌM APPOINTMENT
+        appointment = Appointment.query.get(appointment_id)
+        if not appointment or appointment.patient_id != int(patient_id) or appointment.doctor_id != int(doctor_id):
+            return jsonify({'success': False, 'message': 'Không tìm thấy lịch hẹn phù hợp'})
+
+        # KIỂM TRA TRẠNG THÁI APPOINTMENT - CHỈ CHO PHÉP KHI LÀ "Scheduled"
+        if appointment.status != AppointmentStatus.Scheduled:
+            return jsonify({
+                'success': False,
+                'message': f'Chỉ có thể chuẩn đoán cho lịch hẹn đang chờ khám. Trạng thái hiện tại: {appointment.status.value}'
+            })
+
+        # KIỂM TRA THỜI GIAN - CHỈ CHO PHÉP TRONG VÒNG 1 TIẾNG TRƯỚC VÀ SAU GIỜ HẸN
+        current_time = datetime.now()
+        appointment_time = appointment.appointment_time
+        one_hour_before = appointment_time - timedelta(hours=1)
+        one_hour_after = appointment_time + timedelta(hours=1)
+
+        if current_time < one_hour_before or current_time > one_hour_after:
+            return jsonify({
+                'success': False,
+                'message': 'Chỉ có thể chuẩn đoán trong khoảng thời gian từ 1 giờ trước đến 1 giờ sau giờ hẹn khám.'
+            })
+
+        # TÌM HOẶC TẠO HEALTH RECORD
+        if record_id:
+            # Cập nhật health record hiện tại bằng DAO
+            update_data = {
+                'symptoms': symptoms,
+                'diagnosis': diagnosis,
+                'prescription': prescription,
+                'notes': notes,
+                'record_date': datetime.now().date()
+            }
+            health_record = dao_healthrecord.update_healthrecord(record_id, update_data)
+
+            if not health_record:
+                return jsonify({'success': False, 'message': 'Health record không hợp lệ'})
+        else:
+            # Tạo health record mới bằng DAO
+            health_record = HealthRecord(
+                patient_id=patient_id,
+                appointment_id=appointment_id,
+                user_id=current_user.user_id,
+                record_date=datetime.now().date(),
+                symptoms=symptoms,
+                diagnosis=diagnosis,
+                prescription=prescription,
+                notes=notes
+            )
+            db.session.add(health_record)
+
+        # CẬP NHẬT TRẠNG THÁI APPOINTMENT THÀNH HOÀN THÀNH
+        appointment.status = AppointmentStatus.Completed
+
+        # LƯU VÀO DATABASE
+        db.session.commit()
+
+        return jsonify({
+            'success': True,
+            'message': 'Chuẩn đoán đã được lưu thành công',
+            'record_id': health_record.record_id
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Lỗi khi cập nhật chuẩn đoán: {str(e)}")
+        return jsonify({'success': False, 'message': f'Lỗi hệ thống: {str(e)}'}), 500
+# lấy hồ sơ sức khỏe
+@app.route('/api/get-diagnosis/<int:appointment_id>')
+@login_required
+@role_only([RoleEnum.DOCTOR])
+def get_diagnosis(appointment_id):
+    try:
+        # TÌM APPOINTMENT VÀ KIỂM TRA QUYỀN TRUY CẬP
+        appointment = Appointment.query.get(appointment_id)
+        if not appointment:
+            return jsonify({'success': False, 'message': 'Lịch hẹn không tồn tại'}), 404
+
+        # KIỂM TRA BÁC SĨ CÓ QUYỀN XEM APPOINTMENT NÀY KHÔNG
+        if appointment.doctor_id != current_user.user_id:
+            return jsonify({'success': False, 'message': 'Bạn không có quyền xem chuẩn đoán này'}), 403
+
+        # KIỂM TRA THỜI GIAN - CHỈ CHO PHÉP TRONG VÒNG 1 TIẾNG TRƯỚC VÀ SAU GIỜ HẸN
+        current_time = datetime.now()
+        appointment_time = appointment.appointment_time
+        one_hour_before = appointment_time - timedelta(hours=1)
+        one_hour_after = appointment_time + timedelta(hours=1)
+        is_within_time_window = one_hour_before <= current_time <= one_hour_after
+
+        # Tìm health record dựa trên appointment_id
+        health_record = HealthRecord.query.filter_by(appointment_id=appointment_id).first()
+
+        if health_record:
+            return jsonify({
+                'success': True,
+                'record_id': health_record.record_id,
+                'symptoms': health_record.symptoms or '',
+                'diagnosis': health_record.diagnosis or '',
+                'prescription': health_record.prescription or '',
+                'notes': health_record.notes or '',
+                'appointment_status': appointment.status.value,
+                'can_edit': appointment.status == AppointmentStatus.Scheduled and is_within_time_window,
+                'is_within_time_window': is_within_time_window
+            })
+        else:
+            return jsonify({
+                'success': True,
+                'record_id': None,
+                'symptoms': '',
+                'diagnosis': '',
+                'prescription': '',
+                'notes': '',
+                'appointment_status': appointment.status.value,
+                'can_edit': appointment.status == AppointmentStatus.Scheduled and is_within_time_window,
+                'is_within_time_window': is_within_time_window
+            })
+
+    except Exception as e:
+        app.logger.error(f"Lỗi khi lấy dữ liệu chuẩn đoán: {str(e)}")
+        return jsonify({'success': False, 'message': f'Lỗi hệ thống: {str(e)}'}), 500
+
+# patient_cập nhật thông tin cá nhân
+@app.route('/api/update-patient-info', methods=['POST'])
+@login_required
+@role_only([RoleEnum.PATIENT])
+def update_patient_info():
+    try:
+        data = request.get_json()
+
+        # Kiểm tra quyền truy cập - patient chỉ được cập nhật thông tin của chính mình
+        patient_id = int(data.get('patient_id'))
+        if current_user.user_id != patient_id:
+            return jsonify({'success': False, 'message': 'Bạn không có quyền cập nhật thông tin này'})
+
+        # Chuẩn bị dữ liệu để cập nhật
+        user_data = {
+            'first_name': data.get('first_name'),
+            'last_name': data.get('last_name'),
+            'phone_number': data.get('phone_number'),
+            'email': data.get('email'),
+            'address': data.get('address'),
+        }
+
+        # Xử lý ngày sinh
+        dob_str = data.get('date_of_birth')
+        if dob_str:
+            try:
+                user_data['date_of_birth'] = datetime.strptime(dob_str, '%Y-%m-%d').date()
+            except ValueError:
+                return jsonify({'success': False, 'message': 'Định dạng ngày sinh không hợp lệ'})
+
+        # Xử lý giới tính
+        gender_str = data.get('gender')
+        if gender_str:
+            if gender_str in GenderEnum.__members__:
+                user_data['gender'] = GenderEnum[gender_str]
+            else:
+                return jsonify({'success': False, 'message': 'Giới tính không hợp lệ'})
+
+        # Chuẩn bị dữ liệu patient
+        patient_data = {
+            'medical_history_summary': data.get('medical_history_summary', '')
+        }
+
+        # Sử dụng DAO để cập nhật thông tin
+        result = dao_patient.update_patient(patient_id, user_data, patient_data)
+
+        if not result:
+            return jsonify({'success': False, 'message': 'Cập nhật thông tin thất bại'})
+
+        user, patient = result
+
+        return jsonify({
+            'success': True,
+            'message': 'Cập nhật thông tin thành công',
+            'data': {
+                'first_name': user.first_name,
+                'last_name': user.last_name,
+                'email': user.email,
+                'phone_number': user.phone_number,
+                'medical_history_summary': patient.medical_history_summary if patient else ''
+            }
+        })
+
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Lỗi khi cập nhật thông tin patient: {str(e)}")
+        return jsonify({'success': False, 'message': f'Lỗi hệ thống: {str(e)}'}), 500

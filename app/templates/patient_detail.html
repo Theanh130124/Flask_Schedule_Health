@@ -2,144 +2,354 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Hồ sơ bệnh nhân</title>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-  <style>
-    .card { margin-bottom: 20px; }
-    .label {
-      font-weight: bold;
-      display: inline-block;
-      min-width: 180px;
-    }
-    .status-select {
-      width: 140px;
-      font-size: 0.85rem;
-      padding: 2px 4px;
-    }
-  </style>
+  <title>Hồ sơ bệnh nhân - {{ user.first_name }} {{ user.last_name }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/patient_detail.css') }}">
 </head>
 <body class="container my-4">
 
   <!-- Tiêu đề -->
-  <div class="card p-3 d-flex justify-content-between align-items-center flex-row">
-    <h5 class="mb-0">
-      Hồ sơ bệnh nhân - {{ patient.first_name }} {{ patient.last_name }}
-    </h5>
-
-    {% if current_user.role.name == "PATIENT" %}
-      <a href="{{ url_for('patient_update', patient_id=patient.user_id) }}"
-         class="btn btn-dark btn-sm">Cập nhật thông tin</a>
-    {% endif %}
+  <div class="profile-header">
+    <h4 class="mb-0">
+      <i class="fas fa-user-injured me-2"></i>
+      Hồ sơ bệnh nhân - {{ user.first_name }} {{ user.last_name }}
+    </h4>
   </div>
 
   <!-- Thông tin cá nhân -->
-  <div class="card p-3">
-    <h6>Thông tin cá nhân</h6>
-    <div><span class="label">Họ và tên:</span> {{ patient.first_name }} {{ patient.last_name }}</div>
-    <div><span class="label">Giới tính:</span> {{ patient.gender.name if patient.gender else "" }}</div>
-    <div><span class="label">Ngày sinh:</span> {{ patient.date_of_birth }}</div>
-    <div><span class="label">Tuổi:</span> {{ patient.get_age() if patient.get_age else "" }}</div>
-  </div>
-  <div class="card p-3">
-    <div><span class ="label">Địa chỉ</span>{{patient.address}}</div>
-    <div><span class ="label">Email</span>{{patient.email}}</div>
-    <div><span class ="label">medical_history_summary</span>{{patient.medical_history_summary}}</div>
-    <div><span class ="label">Địa chỉ</span></div>
+  <div class="row">
+    <div class="col-md-6">
+      <div class="card p-3">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h5 class="section-title mb-0"><i class="fas fa-info-circle me-2"></i>Thông tin cá nhân</h5>
+          {% if current_user.role.name == "PATIENT" and current_user.user_id == user.user_id %}
+          <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#updatePatientModal">
+            <i class="fas fa-edit me-1"></i>Cập nhật
+          </button>
+          {% endif %}
+        </div>
+        <div class="mb-2">
+          <span class="label">Họ và tên:</span>
+          <span class="info-value">{{ user.first_name }} {{ user.last_name }}</span>
+        </div>
+        <div class="mb-2">
+          <span class="label">Giới tính:</span>
+          <span class="info-value">
+            {% if user.gender %}
+              {{ "Nam" if user.gender.name == "MALE" else "Nữ" }}
+            {% else %}
+              Chưa cập nhật
+            {% endif %}
+          </span>
+        </div>
+        <div class="mb-2">
+          <span class="label">Tuổi:</span>
+          <span class="info-value">{{ calculate_age(user.date_of_birth) }} tuổi</span>
+        </div>
+        <div class="mb-2">
+          <span class="label">Ngày sinh:</span>
+          <span class="info-value">
+            {% if user.date_of_birth %}
+              {{ user.date_of_birth.strftime("%d/%m/%Y") }}
+            {% else %}
+              Chưa cập nhật
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
 
+    <div class="col-md-6">
+      <div class="card p-3">
+        <h5 class="section-title"><i class="fas fa-address-card me-2"></i>Thông tin liên hệ</h5>
+        <div class="mb-2">
+          <span class="label">Email:</span>
+          <span class="info-value">{{ user.email }}</span>
+        </div>
+        <div class="mb-2">
+          <span class="label">Số điện thoại:</span>
+          <span class="info-value">{{ user.phone_number }}</span>
+        </div>
+        <div class="mb-2">
+          <span class="label">Địa chỉ:</span>
+          <span class="info-value">{{ user.address }}</span>
+        </div>
+      </div>
+    </div>
   </div>
+
+  <!-- Tiền sử bệnh -->
+  <div class="card medical-history-card">
+    <div class="card-header">
+      <h5 class="mb-0"><i class="fas fa-history me-2"></i>Tiền sử bệnh</h5>
+    </div>
+    <div class="card-body">
+      {% if patient.medical_history_summary %}
+        <div class="d-flex">
+          <i class="fas fa-file-medical-alt me-3 mt-1"></i>
+          <div class="flex-grow-1">
+            {{ patient.medical_history_summary }}
+          </div>
+        </div>
+      {% else %}
+        <div class="text-center text-muted py-3">
+          <i class="fas fa-info-circle me-1"></i>Chưa có thông tin tiền sử bệnh
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Hồ sơ sức khỏe -->
+  <div class="card p-3">
+    <h5 class="section-title"><i class="fas fa-file-medical me-2"></i>Hồ sơ sức khỏe</h5>
+
+    {% if health_records %}
+      {% for record in health_records %}
+      <div class="health-record">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Ngày khám: {{ record.record_date.strftime("%d/%m/%Y") }}</h6>
+          <span class="doctor-badge">
+            <i class="fas fa-user-md me-1"></i>Bác sĩ:
+            {% if record.creator %}
+              {{ record.creator.first_name }} {{ record.creator.last_name }}
+            {% else %}
+              Không xác định
+            {% endif %}
+          </span>
+        </div>
+
+        <div class="record-item">
+          <div class="record-label"><i class="fas fa-stethoscope me-1"></i>Triệu chứng:</div>
+          <div class="record-content">{{ record.symptoms or "Chưa có thông tin" }}</div>
+        </div>
+
+        <div class="record-item">
+          <div class="record-label"><i class="fas fa-diagnosis me-1"></i>Chuẩn đoán:</div>
+          <div class="record-content">{{ record.diagnosis or "Chưa có thông tin" }}</div>
+        </div>
+
+        <div class="record-item">
+          <div class="record-label"><i class="fas fa-pills me-1"></i>Đơn thuốc:</div>
+          <div class="record-content">{{ record.prescription or "Chưa có thông tin" }}</div>
+        </div>
+
+        <div class="record-item">
+          <div class="record-label"><i class="fas fa-sticky-note me-1"></i>Ghi chú:</div>
+          <div class="record-content">{{ record.notes or "Chưa có thông tin" }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="empty-state">
+        <i class="fas fa-file-medical"></i>
+        <p class="fs-5 mt-2">Chưa có hồ sơ sức khỏe</p>
+        <p class="text-muted">Thông tin chuẩn đoán và điều trị sẽ được hiển thị tại đây</p>
+      </div>
+    {% endif %}
+  </div>
+
   <!-- Lịch khám bệnh -->
   <div class="card p-3">
-    <div class="d-flex justify-content-between align-items-center">
-      <h6>Lịch khám bệnh</h6>
-      <a href="/patients/{{ patient.user_id }}/appointments" class="btn btn-sm btn-outline-dark">Xem tất cả</a>
+    <h5 class="section-title"><i class="fas fa-calendar-check me-2"></i>Lịch khám bệnh</h5>
+
+    {% if appointments %}
+      <div class="table-responsive">
+        <table class="table table-sm mt-2">
+          <thead class="table-light">
+            <tr>
+              <th>Ngày khám</th>
+              <th>Bác sĩ</th>
+              <th>Trạng thái</th>
+              <th class="text-center">Thao tác</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for appointment in appointments %}
+            <tr>
+              <td>{{ appointment.appointment_time.strftime("%d/%m/%Y %H:%M") }}</td>
+              <td>{{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}</td>
+              <td>
+                {% if appointment.status.name == "Scheduled" %}
+                  <span class="status-badge status-scheduled">Đã đặt lịch</span>
+                {% elif appointment.status.name == "Completed" %}
+                  <span class="status-badge status-completed">Đã hoàn thành</span>
+                {% else %}
+                  <span class="status-badge status-cancelled">Đã hủy</span>
+                {% endif %}
+              </td>
+              <td class="text-center">
+                <div class="action-buttons">
+                  <a href="{{ url_for('appointment_detail', appointment_id=appointment.appointment_id) }}"
+                    class="btn btn-sm btn-primary">
+                    <i class="fas fa-eye me-1"></i>Chi tiết
+                  </a>
+
+                  <!-- NÚT CHUẨN ĐOÁN CHO BÁC SĨ -->
+                  {% if current_user.role.name == "DOCTOR" %}
+                  <button type="button" class="btn btn-sm btn-success btn-diagnosis"
+                          onclick="openDiagnosisModal({{ appointment.appointment_id }}, {{ appointment.patient_id }}, {{ current_user.user_id }}, '{{ appointment.appointment_time.strftime('%Y-%m-%d %H:%M:%S') }}')">
+                    <i class="fas fa-stethoscope me-1"></i>Chuẩn đoán
+                  </button>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <div class="empty-state">
+        <i class="fas fa-calendar-times"></i>
+        <p class="fs-5 mt-2">Chưa có lịch khám nào</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <!-- Nút điều hướng -->
+  <div class="d-flex justify-content-between mt-4">
+    <a href="javascript:history.back()" class="btn btn-secondary">
+      <i class="fas fa-arrow-left me-1"></i>Quay lại
+    </a>
+  </div>
+
+  <!-- Modal chuẩn đoán -->
+  <div class="modal fade" id="diagnosisModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-stethoscope me-2"></i>Chuẩn đoán bệnh</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <div id="loadingIndicator" class="text-center py-4" style="display: none;">
+            <div class="spinner-border text-success" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2">Đang tải dữ liệu...</p>
+          </div>
+
+          <form id="diagnosisForm" style="display: none;">
+            <input type="hidden" name="appointment_id" id="appointmentId">
+            <input type="hidden" name="patient_id" id="patientId">
+            <input type="hidden" name="doctor_id" id="doctorId">
+            <div class="mb-3">
+              <label class="form-label">Triệu chứng</label>
+              <textarea class="form-control" name="symptoms" id="symptomsInput" rows="3" placeholder="Mô tả triệu chứng của bệnh nhân..."></textarea>
+            </div>
+            <div class="mb-3">
+              <label class="form-label">Chuẩn đoán:</label>
+              <textarea class="form-control" name="diagnosis" id="diagnosisInput" rows="4" placeholder="Nhập chuẩn đoán..." required></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Đơn thuốc:</label>
+              <textarea class="form-control" name="prescription" id="prescriptionInput" rows="3" placeholder="Kê đơn thuốc..."></textarea>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Ghi chú:</label>
+              <textarea class="form-control" name="notes" id="notesInput" rows="2" placeholder="Ghi chú thêm..."></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+          <button type="button" class="btn btn-success" id="saveDiagnosisBtn" onclick="submitDiagnosis()">
+            <i class="fas fa-save me-1"></i>Lưu chuẩn đoán
+          </button>
+        </div>
+      </div>
     </div>
-    <table class="table table-sm mt-2">
-      <thead>
-        <tr>
-          <th>Ngày khám</th>
-          <th>Bác sĩ</th>
-          <th>Trạng thái</th>
-          <th class="text-center">Thao tác</th>
-        </tr>
-      </thead>
-      <tbody>
-        {% for a in appointments %}
-        <tr>
-          <td>{{ a.appointment_time.strftime("%Y-%m-%d %H:%M") }}</td>
-          <td>{{ a.doctor.first_name }} {{ a.doctor.last_name }}</td>
-          <td>
-            {% if current_user.role.name == "DOCTOR" %}
-              <select class="form-select form-select-sm status-select"
-                      data-appointment-id="{{ a.appointment_id }}">
-                <option value="Scheduled" {% if a.status.value =="Scheduled" %}selected{% endif %}>Chưa khám</option>
-                <option value="InProgress" {% if a.status.value =="InProgress" %}selected{% endif %}>Đang khám</option>
-                <option value="Completed" {% if a.status.value =="Completed" %}selected{% endif %}>Đã khám</option>
-              </select>
-            {% else %}
-              <span>
-                {% if a.status.value == "Scheduled" %}Chưa khám
-                {% elif a.status.value == "InProgress" %}Đang khám
-                {% elif a.status.value == "Completed" %}Đã khám
-                {% else %}{{ a.status.value }}{% endif %}
-              </span>
-            {% endif %}
-          </td>
-          <td class="text-center">
-            <a href="/appointments/{{ a.appointment_id }}" class="btn btn-sm btn-primary">Chi tiết</a>
-            <a href="diagnosis.html" class="btn btn-sm btn-warning">Chuẩn đoán</a>
-          </td>
-        </tr>
-        {% else %}
-        <tr>
-          <td colspan="4" class="text-center text-muted">Chưa có lịch khám nào</td>
-        </tr>
-        {% endfor %}
-
-        <!-- Hàng cuối cùng -->
-        <tr>
-          <td colspan="3"></td>
-          <td class="text-end">
-            <button id="applyChanges" class="btn btn-success btn-sm">Áp dụng</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
   </div>
 
-  <!-- Bảo hiểm -->
-  <div class="card p-3">
-    <h6>Thông tin bảo hiểm</h6>
-    <div><span class="label">Mã BHYT / Số CMND:</span> {{ patient.patient.insurance_number or "" }}</div>
+  <!-- Modal cập nhật thông tin patient -->
+  <div class="modal fade" id="updatePatientModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Cập nhật thông tin cá nhân</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+        <div class="modal-body">
+          <form id="updatePatientForm">
+            <input type="hidden" name="patient_id" value="{{ user.user_id }}">
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Họ *</label>
+                  <input type="text" class="form-control" name="last_name" value="{{ user.last_name }}" required>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Tên *</label>
+                  <input type="text" class="form-control" name="first_name" value="{{ user.first_name }}" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Số điện thoại *</label>
+                  <input type="tel" class="form-control" name="phone_number" value="{{ user.phone_number }}" required>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Email *</label>
+                  <input type="email" class="form-control" name="email" value="{{ user.email }}" required>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Địa chỉ</label>
+              <textarea class="form-control" name="address" rows="2">{{ user.address }}</textarea>
+            </div>
+
+            <div class="row">
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Ngày sinh</label>
+                  <input type="date" class="form-control" name="date_of_birth"
+                         value="{{ user.date_of_birth.strftime('%Y-%m-%d') if user.date_of_birth else '' }}">
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="mb-3">
+                  <label class="form-label">Giới tính</label>
+                  <select class="form-select" name="gender">
+                    <option value="">Chọn giới tính</option>
+                    <option value="MALE" {% if user.gender and user.gender.name =="MALE" %}selected{% endif %}>Nam</option>
+                    <option value="FEMALE" {% if user.gender and user.gender.name =="FEMALE" %}selected{% endif %}>Nữ</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label">Tiền sử bệnh</label>
+              <textarea class="form-control" name="medical_history_summary" rows="3">{{ patient.medical_history_summary or '' }}</textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+          <button type="button" class="btn btn-primary" onclick="updatePatientInfo()">
+            <i class="fas fa-save me-1"></i>Cập nhật
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- JS cập nhật trạng thái -->
-  <script>
-  document.addEventListener("DOMContentLoaded", () => {
-    const statusChanges = {};
-
-    document.querySelectorAll(".status-select").forEach(select => {
-      select.addEventListener("change", () => {
-        statusChanges[select.dataset.appointmentId] = select.value;
-      });
-    });
-
-    document.getElementById("applyChanges").addEventListener("click", async () => {
-      for (const [appointmentId, newStatus] of Object.entries(statusChanges)) {
-        const response = await fetch(`/appointment/${appointmentId}/status`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: newStatus })
-        });
-        const result = await response.json();
-        if (!result.success) {
-          alert("Cập nhật thất bại cho lịch hẹn " + appointmentId + ": " + result.message);
-        }
-      }
-      alert("Đã áp dụng tất cả thay đổi!");
-      location.reload();
-    });
-  });
-  </script>
+  <!-- JavaScript -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{{ url_for('static', filename='js/patient_detail.js') }}"></script>
 
 </body>
 </html>

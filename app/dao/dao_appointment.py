@@ -1,4 +1,4 @@
-
+from sqlalchemy.orm import joinedload
 from app import db
 from app.email_service import send_appointment_notification
 from app.models import AvailableSlot, Appointment, AppointmentStatus, Invoice, InvoiceStatus, Payment, PaymentStatus, \
@@ -214,13 +214,12 @@ def get_patient_by_userid(user_id):
     return Patient.query.filter_by(patient_id=user_id).first()
 
 def get_patient_appointments_paginated(patient_id, page=1, per_page=6):
-    """Lấy danh sách lịch hẹn của bệnh nhân có phân trang"""
+    """Lấy danh sách lịch hẹn của bệnh nhân có phân trang (có join Doctor và User)"""
     return (Appointment.query
+            .options(joinedload(Appointment.doctor).joinedload(Doctor.user))
             .filter_by(patient_id=patient_id)
             .order_by(Appointment.appointment_time.desc())
-            .offset((page - 1) * per_page)
-            .limit(per_page)
-            .all())
+            .paginate(page=page, per_page=per_page, error_out=False))
 
 def get_doctor_appointments_paginated(doctor_id, page=1, per_page=6):
     """Lấy danh sách lịch hẹn của bác sĩ có phân trang"""
