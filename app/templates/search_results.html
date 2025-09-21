@@ -1,25 +1,20 @@
-{% extends "layout/base.html" %}
-{% block title %}Kết quả tìm kiếm{% endblock %}
+{% extends "layout/base.html" %} {% block title %}Kết quả tìm kiếm{% endblock %}
 {% block content %}
 <h2 class="mb-3">Kết quả tìm kiếm bác sĩ</h2>
 
 {% if doctors %}
 <div class="row g-3">
-  {% for d in doctors %}
-  {% set doctor_title = 'Bác sĩ ' ~ d.name %}
+  {% for d in doctors %} {% set doctor_title = 'Bác sĩ ' ~ d.name %}
   <div class="col-12 col-md-6 col-lg-4">
     <div class="card h-100 shadow-sm doctor-card">
-
-
-
       <div class="card-body">
         <div class="d-flex align-items-start justify-content-between">
           <div class="d-flex gap-3">
             <div class="doctor-avatar">
               {% if d.avatar %}
-                <img src="{{ d.avatar }}" alt="{{ doctor_title }}">
+              <img src="{{ d.avatar }}" alt="{{ doctor_title }}" />
               {% else %}
-                <div class="avatar-fallback">{{ d.name[:1] }}</div>
+              <div class="avatar-fallback">{{ d.name[:1] }}</div>
               {% endif %}
             </div>
             <div>
@@ -31,13 +26,13 @@
           </div>
 
           {% if d.accepts_insurance %}
-            <span class="badge bg-success">Có Bảo Hiểm</span>
+          <span class="badge bg-success">Có Bảo Hiểm</span>
           {% else %}
-            <span class="badge bg-secondary">Không Bảo Hiểm</span>
+          <span class="badge bg-secondary">Không Bảo Hiểm</span>
           {% endif %}
         </div>
 
-        <hr class="my-3">
+        <hr class="my-3" />
 
         <ul class="list-unstyled mb-3">
           <li class="mb-1">
@@ -47,67 +42,87 @@
           <li class="mb-1">
             <i class="bi bi-mortarboard me-1"></i>
             <strong>Kinh nghiệm:</strong>
-            {% if d.experience is not none %}{{ d.experience }} năm{% else %}-{% endif %}
+            {% if d.experience is not none %}{{ d.experience }} năm{% else %}-{%
+            endif %}
           </li>
           <li class="mb-1">
             <i class="bi bi-cash-coin me-1"></i>
             <strong>Phí khám:</strong>
-            {% if d.consultation_fee is not none %}
-              {{ "{:,.0f}".format(d.consultation_fee) }} đ
-            {% else %}-{% endif %}
+            {% if d.consultation_fee is not none %} {{
+            "{:,.0f}".format(d.consultation_fee) }} đ {% else %}-{% endif %}
           </li>
           <li>
             <strong>Đánh giá:</strong>
-            {% if d.rating is not none %}
-              {% set rating = d.rating %}
-              {% set full = rating|int %}
-              {% set half = 1 if (rating - full) >= 0.5 else 0 %}
-              {% set empty = 5 - full - half %}
-              <span class="rating-stars ms-1" aria-label="Đánh giá {{ '%.1f'|format(rating) }} trên 5">
-                {% for _ in range(full) %}<i class="bi bi-star-fill text-warning"></i>{% endfor %}
-                {% if half %}<i class="bi bi-star-half text-warning"></i>{% endif %}
-                {% for _ in range(empty) %}<i class="bi bi-star text-warning"></i>{% endfor %}
-              </span>
-              <span class="small text-muted ms-1">({{ "{:.1f}".format(rating) }})</span>
+            {% if d.rating is not none %} {% set rating = d.rating %} {% set
+            full = rating|int %} {% set half = 1 if (rating - full) >= 0.5 else
+            0 %} {% set empty = 5 - full - half %}
+            <span
+              class="rating-stars ms-1"
+              aria-label="Đánh giá {{ '%.1f'|format(rating) }} trên 5"
+            >
+              {% for _ in range(full) %}<i
+                class="bi bi-star-fill text-warning"
+              ></i
+              >{% endfor %} {% if half %}<i
+                class="bi bi-star-half text-warning"
+              ></i
+              >{% endif %} {% for _ in range(empty) %}<i
+                class="bi bi-star text-warning"
+              ></i
+              >{% endfor %}
+            </span>
+            <span class="small text-muted ms-1"
+              >({{ "{:.1f}".format(rating) }})</span
+            >
             {% else %}
-              <span class="text-muted ms-1">Chưa có</span>
+            <span class="text-muted ms-1">Chưa có</span>
             {% endif %}
           </li>
         </ul>
 
-      <div class="d-grid gap-2">
-      <a href="{{ url_for('doctor_detail', doctor_id=d.doctor_id) }}" class="btn btn-outline-primary">
-        Xem chi tiết
-      </a>
-      </div>
+        <div class="d-grid gap-2">
+          <a
+            href="{{ url_for('doctor_detail', doctor_id=d.doctor_id) }}"
+            class="btn btn-outline-primary"
+          >
+            Xem chi tiết
+          </a>
+
+          <a
+            href="{{ url_for('doctor_detail', doctor_id=d.doctor_id) }}"
+            class="btn btn-outline-primary"
+          >
+            Đánh giá
+          </a>
+        </div>
       </div>
     </div>
   </div>
   {% endfor %}
 </div>
 {% else %}
-  <div class="alert alert-warning">Không tìm thấy bác sĩ nào.</div>
+<div class="alert alert-warning">Không tìm thấy bác sĩ nào.</div>
 {% endif %}
 
 <style>
   .doctor-avatar img {
-  width: 64px;
-  height: 64px;
-  object-fit: cover; /* cắt vừa khung, không méo hình */
-  border-radius: 50%; /* bo tròn avatar */
-  border: 2px solid #ddd; /* viền nhẹ */
-}
+    width: 64px;
+    height: 64px;
+    object-fit: cover; /* cắt vừa khung, không méo hình */
+    border-radius: 50%; /* bo tròn avatar */
+    border: 2px solid #ddd; /* viền nhẹ */
+  }
 
-.avatar-fallback {
-  width: 64px;
-  height: 64px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #ccc;
-  color: #fff;
-  font-size: 20px;
-  border-radius: 50%;
-}
+  .avatar-fallback {
+    width: 64px;
+    height: 64px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #ccc;
+    color: #fff;
+    font-size: 20px;
+    border-radius: 50%;
+  }
 </style>
 {% endblock %}

@@ -24,8 +24,103 @@ from app.extensions import db
 from app.models import Hospital, Specialty, User, Doctor, RoleEnum, GenderEnum
 from app.form import LoginForm, RegisterForm
 from app.dao import dao_authen, dao_user, dao_search
+from app.models import User
 
 
+from flask import request, redirect, url_for, flash
+from flask_login import login_required, current_user
+from app.decorators import role_only
+from app.models import User
+
+from app.models import RoleEnum
+
+from app.dao.dao_review import add_review  
+from app.dao import dao_review as rv_dao
+from app.dao.dao_review import doctor_reply
+
+
+
+
+# Bệnh nhân viết review
+@app.route("/doctor/<int:doctor_id>/review", methods=["POST"])
+@login_required
+@role_only([RoleEnum.PATIENT])
+def review_create(doctor_id):
+ 
+    appointment_id = request.form.get("appointment_id", type=int)
+    rating = request.form.get("rating", type=int)
+    comment = (request.form.get("comment") or "").strip()
+
+    if not appointment_id or not rating or rating < 1 or rating > 5:
+        flash("Thiếu thông tin hoặc điểm không hợp lệ (1-5).", "error")
+        return redirect(url_for("doctor_detail", doctor_id=doctor_id, _anchor="write-review"))
+
+    rv, msg = add_review(
+        appointment_id=appointment_id,
+        patient_id=current_user.user_id,
+        doctor_id=doctor_id,
+        rating=rating,
+        comment=comment
+    )
+    flash(msg if msg else ("Gửi đánh giá thành công!" if rv else "Không thể gửi đánh giá."), 
+          "success" if rv else "error")
+    return redirect(url_for("doctor_detail", doctor_id=doctor_id, _anchor="write-review"))
+
+
+# Bệnh nhân cập nhật review
+@app.route("/review/<int:review_id>/update", methods=["POST"], endpoint="review_update")
+@login_required
+@role_only([RoleEnum.PATIENT])
+def review_update_route(review_id):
+    
+ 
+    rating = request.form.get("rating", type=int)
+    comment = (request.form.get("comment") or "").strip()
+    doctor_id_fallback = request.form.get("doctor_id", type=int)  # lấy từ hidden input trong form
+
+    rv, msg = rv_dao.update_review(
+        review_id=review_id,
+        patient_id=current_user.user_id,
+        rating=rating,
+        comment=comment
+    )
+
+    if rv:
+       
+        flash(msg or "Lưu thay đổi thành công!", "success")
+        target_doctor_id = getattr(rv, "doctor_id", doctor_id_fallback)
+    else:
+        flash(msg or "Không thể cập nhật đánh giá.", "error")
+        target_doctor_id = doctor_id_fallback
+
+    return redirect(url_for("doctor_detail",
+                            doctor_id=target_doctor_id,
+                            _anchor="write-review"))
+
+
+# Bác sĩ phản hồi review
+@app.route("/review/<int:review_id>/reply", methods=["POST"], endpoint="review_reply")
+@login_required
+@role_only([RoleEnum.DOCTOR])
+def review_reply_route(review_id):
+   
+
+    response = (request.form.get("response") or "").strip()
+    if not response:
+        flash("Nội dung phản hồi không được để trống.", "error")
+        return redirect(url_for("doctor_detail", doctor_id=current_user.user_id, _anchor="write-review"))
+
+    rv, msg, review_doctor_id = doctor_reply(
+        review_id=review_id,
+        doctor_id=current_user.user_id,
+        response_text=response
+    )
+    flash(msg if msg else ("Đã lưu phản hồi." if rv else "Không thể lưu phản hồi."), 
+          "success" if rv else "error")
+
+    return redirect(url_for("doctor_detail",
+                            doctor_id=(review_doctor_id or current_user.user_id),
+                            _anchor="write-review"))
 
 
 @app.route("/api/hospitals")

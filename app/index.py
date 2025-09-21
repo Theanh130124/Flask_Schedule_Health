@@ -44,6 +44,10 @@ app.add_url_rule("/upload_license", "upload_license", controllers.upload_license
 app.add_url_rule("/patients/search", "patient_search", controllers.patient_search)
 app.add_url_rule("/patients/<int:patient_id>", "patient_detail", controllers.patient_detail)
 
+app.add_url_rule("/doctor/<int:doctor_id>/review","review_create",controllers.review_create,methods=["POST"])
+app.add_url_rule("/review/<int:review_id>/update","review_update",controllers.review_update_route,methods=["POST"])
+app.add_url_rule("/review/<int:review_id>/reply","review_reply",controllers.review_reply_route,methods=["POST"])
+
 
 if __name__ == '__main__':
 
@@ -51,4 +55,4 @@ if __name__ == '__main__':
 #     db.create_all()   # Tạo tất cả bảng trong database
 
  # Nua push len nho chay 5000 nha
-    app.run(host="localhost", port=5001, debug=True)
+    app.run(host="localhost", port=5000, debug=True)
