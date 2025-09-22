@@ -45,6 +45,12 @@
                     <td>
                         <a href="{{ url_for('appointment_detail', appointment_id=appointment.appointment_id) }}"
                            class="btn btn-sm btn-info">Xem chi tiết</a>
+                        {% if appointment.status.value == 'Completed'%}
+                        <a href="{{ url_for('doctor_detail', doctor_id=appointment.doctor_id, _anchor='write-review') }}"
+                           class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-comment me-1"></i>Phản hồi đánh giá
+                        </a>
+                        {% endif %}
                     </td>
                 </tr>
                 {% endfor %}

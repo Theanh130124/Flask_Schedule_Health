@@ -1,0 +1,158 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Hồ sơ bác sĩ - {{ user.first_name }} {{ user.last_name }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Thông tin cá nhân -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-md me-2"></i>Thông tin cá nhân</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ user.avatar }}" alt="Avatar" class="rounded-circle mb-3" width="120" height="120">
+                    <h4>BS. {{ user.first_name }} {{ user.last_name }}</h4>
+                    <p class="text-muted">{{ doctor.specialty.name if doctor and doctor.specialty else 'Chưa cập nhật' }}</p>
+
+                    <div class="text-start">
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>SĐT:</strong> {{ user.phone_number }}</p>
+                        <p><strong>Ngày sinh:</strong> {{ user.date_of_birth.strftime('%d/%m/%Y') if user.date_of_birth else 'Chưa cập nhật' }}</p>
+                        <p><strong>Giới tính:</strong>
+                            {% if user.gender %}
+                                {{ 'Nam' if user.gender.name == 'MALE' else 'Nữ' }}
+                            {% else %}
+                                Chưa cập nhật
+                            {% endif %}
+                        </p>
+                        <p><strong>Địa chỉ:</strong> {{ user.address }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Thống kê nhanh -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-bar me-2"></i>Thống kê</h5>
+                </div>
+                <div class="card-body">
+                    <p><i class="fas fa-calendar-check me-2"></i> Tổng lịch hẹn: {{ stats.total_appointments }}</p>
+                    <p><i class="fas fa-star me-2"></i> Đánh giá trung bình: {{ stats.average_rating|round(1) }}/5</p>
+                    <p><i class="fas fa-users me-2"></i> Bệnh nhân đã khám: {{ stats.total_patients }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <!-- Thông tin chuyên môn -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Thông tin chuyên môn</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Bệnh viện:</strong> {{ doctor.hospital.name if doctor and doctor.hospital else 'Chưa cập nhật' }}
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Chuyên khoa:</strong> {{ doctor.specialty.name if doctor and doctor.specialty else 'Chưa cập nhật' }}
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <strong>Kinh nghiệm:</strong> {{ doctor.years_experience or '0' }} năm
+                        </div>
+                        <div class="col-md-6">
+                            <strong>Trình độ:</strong> {{ doctor.educational_level or 'Chưa cập nhật' }}
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <strong>Giới thiệu:</strong>
+                            <p>{{ doctor.bio or 'Chưa cập nhật thông tin giới thiệu.' }}</p>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-12">
+                            <strong>Phí khám:</strong>
+                            {% if doctor.consultation_fee %}
+                                {{ "{:,.0f}".format(doctor.consultation_fee) }} VNĐ
+                            {% else %}
+                                Chưa cập nhật
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chứng chỉ hành nghề -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-certificate me-2"></i>Chứng chỉ hành nghề</h5>
+                </div>
+                <div class="card-body">
+                    {% if licenses %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Số hiệu</th>
+                                        <th>Nơi cấp</th>
+                                        <th>Ngày cấp</th>
+                                        <th>Hết hạn</th>
+                                        <th>Trạng thái</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for license in licenses %}
+                                    <tr>
+                                        <td>{{ license.license_number }}</td>
+                                        <td>{{ license.issuing_authority }}</td>
+                                        <td>{{ license.issue_date.strftime('%d/%m/%Y') }}</td>
+                                        <td>{{ license.expiry_date.strftime('%d/%m/%Y') if license.expiry_date else 'Vô thời hạn' }}</td>
+                                        <td>
+                                            {% if license.is_verified %}
+                                                <span class="badge bg-success">Đã xác thực</span>
+                                            {% else %}
+                                                <span class="badge bg-warning text-dark">Chờ xác thực</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Chưa có chứng chỉ hành nghề nào được đăng ký.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Lịch làm việc -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-alt me-2"></i>Lịch làm việc</h5>
+                </div>
+                <div class="card-body">
+                    {% if availabilities %}
+                        <div class="row">
+                            {% for availability in availabilities %}
+                                {% if availability.is_available %}
+                                    <div class="col-md-6 mb-2">
+                                        <strong>{{ availability.day_of_week.value }}:</strong>
+                                        {{ availability.start_time.strftime('%H:%M') }} - {{ availability.end_time.strftime('%H:%M') }}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Chưa thiết lập lịch làm việc. <a href="{{ url_for('create_schedule') }}">Thiết lập ngay</a></p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -19,7 +19,7 @@ from app.models import Hospital, Specialty, User, Doctor, RoleEnum, Patient, Day
 import google.oauth2.id_token
 import google.auth.transport.requests
 import requests
-from app import app , flow  #là import __init__
+from app import app, flow, PAGE_SIZE  # là import __init__
 from app.extensions import db
 from app.models import Hospital, Specialty, User, Doctor, RoleEnum, GenderEnum
 from app.form import LoginForm, RegisterForm
@@ -46,13 +46,23 @@ from app.dao.dao_review import doctor_reply
 @login_required
 @role_only([RoleEnum.PATIENT])
 def review_create(doctor_id):
- 
     appointment_id = request.form.get("appointment_id", type=int)
     rating = request.form.get("rating", type=int)
     comment = (request.form.get("comment") or "").strip()
 
     if not appointment_id or not rating or rating < 1 or rating > 5:
         flash("Thiếu thông tin hoặc điểm không hợp lệ (1-5).", "error")
+        return redirect(url_for("doctor_detail", doctor_id=doctor_id, _anchor="write-review"))
+
+    # Kiểm tra xem appointment_id có hợp lệ không
+    appointment = Appointment.query.filter_by(
+        appointment_id=appointment_id,
+        patient_id=current_user.user_id,
+        doctor_id=doctor_id,
+        status=AppointmentStatus.Completed
+    ).first()
+    if not appointment:
+        flash("Cuộc hẹn không hợp lệ hoặc bạn không có quyền đánh giá.", "error")
         return redirect(url_for("doctor_detail", doctor_id=doctor_id, _anchor="write-review"))
 
     rv, msg = add_review(
@@ -171,16 +181,37 @@ def index():
     specialties = dao_search.get_all_specialties()
     return render_template('index.html', hospitals=hospitals, specialties=specialties)
 
+# Thêm hằng số PAGE_SIZE
+
 @app.route('/search_doctor')
 def search_doctor():
     hospital_name = request.args.get('hospital')
     specialty_name = request.args.get('specialty')
     doctor_name = request.args.get('doctor_name')
+    search_type = request.args.get('search_type', 'hospital')  # Mặc định tìm theo bệnh viện
+    page = request.args.get('page', 1, type=int)
 
-    # nếu dùng cho autocomplete có thể truyền limit=... vào dao
-    doctors = dao_search.search_doctors(hospital_name, specialty_name, doctor_name)
+    # Lấy danh sách bác sĩ với phân trang
+    doctors, total_count = dao_search.search_doctors_paginated(
+        hospital_name=hospital_name,
+        specialty_name=specialty_name,
+        doctor_name=doctor_name,
+        page=page,
+        per_page=PAGE_SIZE
+    )
 
-    return render_template('search_results.html', doctors=doctors)
+    # Tính tổng số trang
+    total_pages = ceil(total_count / PAGE_SIZE) if total_count > 0 else 1
+
+    return render_template('search_results.html',
+                         doctors=doctors,
+                         current_page=page,
+                         total_pages=total_pages,
+                         total_count=total_count,
+                         hospital_name=hospital_name,
+                         specialty_name=specialty_name,
+                         doctor_name=doctor_name,
+                         search_type=search_type)  # Thêm search_type vào template
 
 # Navigate cho đăng nhập hoặc chưa
 def index_controller():
@@ -416,7 +447,7 @@ def register():
         gender = form.gender.data
 
         # Tạo user bằng dao_user
-        new_user = dao_user.create_user(
+        new_user = dao_user.create_user_with_role(
             username=username,
             email=email,
             password=password,
@@ -972,13 +1003,13 @@ def update_diagnosis():
         # KIỂM TRA THỜI GIAN - CHỈ CHO PHÉP TRONG VÒNG 1 TIẾNG TRƯỚC VÀ SAU GIỜ HẸN
         current_time = datetime.now()
         appointment_time = appointment.appointment_time
-        one_hour_before = appointment_time - timedelta(hours=1)
-        one_hour_after = appointment_time + timedelta(hours=1)
+        one_hour_before = appointment_time - timedelta(weeks=1)
+        one_hour_after = appointment_time + timedelta(weeks=1)
 
         if current_time < one_hour_before or current_time > one_hour_after:
             return jsonify({
                 'success': False,
-                'message': 'Chỉ có thể chuẩn đoán trong khoảng thời gian từ 1 giờ trước đến 1 giờ sau giờ hẹn khám.'
+                'message': 'Chỉ có thể chuẩn đoán trong khoảng thời gian từ 1 tuần trước đến 1 tuần sau giờ hẹn khám.'
             })
 
         # TÌM HOẶC TẠO HEALTH RECORD
@@ -1043,8 +1074,8 @@ def get_diagnosis(appointment_id):
         # KIỂM TRA THỜI GIAN - CHỈ CHO PHÉP TRONG VÒNG 1 TIẾNG TRƯỚC VÀ SAU GIỜ HẸN
         current_time = datetime.now()
         appointment_time = appointment.appointment_time
-        one_hour_before = appointment_time - timedelta(hours=1)
-        one_hour_after = appointment_time + timedelta(hours=1)
+        one_hour_before = appointment_time - timedelta(weeks=1)
+        one_hour_after = appointment_time + timedelta(weeks=1)
         is_within_time_window = one_hour_before <= current_time <= one_hour_after
 
         # Tìm health record dựa trên appointment_id
@@ -1146,3 +1177,86 @@ def update_patient_info():
         db.session.rollback()
         app.logger.error(f"Lỗi khi cập nhật thông tin patient: {str(e)}")
         return jsonify({'success': False, 'message': f'Lỗi hệ thống: {str(e)}'}), 500
+
+
+@app.route('/profile')
+@login_required
+def profile():
+    from app.dao import dao_doctor, dao_patient, dao_healthrecord, dao_appointment
+
+    # Lấy thông tin người dùng hiện tại
+    user = dao_authen.get_info_by_id(current_user.user_id)
+
+    # Lấy thông tin chi tiết dựa trên vai trò
+    if current_user.role == RoleEnum.DOCTOR:
+        doctor = dao_authen.get_doctor_by_userid(current_user.user_id)
+        licenses = DoctorLicense.query.filter_by(doctor_id=current_user.user_id).all()
+
+        # Lấy thống kê cho bác sĩ
+        total_appointments = Appointment.query.filter_by(doctor_id=current_user.user_id).count()
+        avg_rating = db.session.query(db.func.avg(Review.rating)).filter_by(doctor_id=current_user.user_id).scalar()
+        total_patients = db.session.query(Patient.patient_id).join(Appointment).filter(
+            Appointment.doctor_id == current_user.user_id
+        ).distinct().count()
+
+        stats = {
+            'total_appointments': total_appointments,
+            'average_rating': float(avg_rating) if avg_rating else 0,
+            'total_patients': total_patients
+        }
+
+        # Lấy lịch làm việc
+        availabilities = dao_doctor.get_doctor_availabilities(current_user.user_id)
+
+        return render_template('doctor_profile.html',
+                               user=user,
+                               doctor=doctor,
+                               licenses=licenses,
+                               stats=stats,
+                               availabilities=availabilities)
+
+    elif current_user.role == RoleEnum.PATIENT:
+        patient = Patient.query.filter_by(patient_id=current_user.user_id).first()
+
+        # Lấy lịch sử khám bệnh gần đây
+        recent_appointments = dao_appointment.get_patient_appointments_paginated(
+            current_user.user_id, page=1, per_page=5
+        )
+
+        # Lấy hồ sơ sức khỏe
+        health_records = dao_healthrecord.get_records_by_patient(current_user.user_id, limit=5)
+
+        # Lấy thống kê cho bệnh nhân
+        total_appointments = Appointment.query.filter_by(patient_id=current_user.user_id).count()
+        completed_appointments = Appointment.query.filter_by(
+            patient_id=current_user.user_id,
+            status=AppointmentStatus.Completed
+        ).count()
+
+        different_doctors = db.session.query(Doctor.doctor_id).join(Appointment).filter(
+            Appointment.patient_id == current_user.user_id
+        ).distinct().count()
+
+        stats = {
+            'total_appointments': total_appointments,
+            'completed_appointments': completed_appointments,
+            'different_doctors': different_doctors
+        }
+
+        # Hàm tính tuổi
+        def calculate_age(dob):
+            if dob:
+                today = date.today()
+                return today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+            return None
+
+        return render_template('patient_profile.html',
+                               user=user,
+                               patient=patient,
+                               appointments=recent_appointments.items if recent_appointments else [],
+                               health_records=health_records,
+                               stats=stats,
+                               calculate_age=calculate_age)
+
+    # Nếu là admin hoặc vai trò khác
+    return render_template('user_profile.html', user=user)

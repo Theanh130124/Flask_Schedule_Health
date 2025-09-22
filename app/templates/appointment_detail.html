@@ -120,11 +120,15 @@
                         {% endif %}
 
                         {% if current_user.role.name == 'DOCTOR' and appointment.status.value == 'Scheduled' %}
-                        <form method="POST" action="{{ url_for('complete_appointment', appointment_id=appointment.appointment_id) }}">
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-check me-2"></i>Đánh dấu hoàn thành
-                            </button>
-                        </form>
+
+<a href="{{ url_for('patient_detail', patient_id=appointment.patient_id) }}" class="btn btn-success">
+    <i class="fas fa-check me-2"></i>Chuẩn đoán bệnh
+</a>
+                                                    <div class="alert alert-info p-2 mb-2">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Chọn <b>Chuẩn đoán bệnh</b> để hoàn thành lịch khám này.
+                            </div>
+
                         {% endif %}
                     </div>
                 </div>

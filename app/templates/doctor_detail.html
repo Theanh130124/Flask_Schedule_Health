@@ -170,45 +170,41 @@
       <div class="card shadow-sm" id="write-review">
         <div class="card-header fw-semibold">Đánh giá</div>
         <div class="card-body">
-          {% if current_user.is_authenticated and current_user.role.value ==
-          'PATIENT' %} {% if eligible_appts and eligible_appts|length > 0 %}
-          <form
-            method="post"
-            action="{{ url_for('review_create', doctor_id=d.doctor_id) }}"
-            class="mb-2"
-          >
+        {% if current_user.is_authenticated and current_user.role.value == 'PATIENT' %}
+        {% if eligible_appts and eligible_appts|length > 0 %}
+        <form method="post" action="{{ url_for('review_create', doctor_id=d.doctor_id) }}" class="mb-2">
             <div class="mb-2">
-              <label class="form-label">Chấm điểm (1–5)</label>
-              <input
-                type="number"
-                name="rating"
-                class="form-control"
-                min="1"
-                max="5"
-                required
-              />
+                <label class="form-label">Chọn cuộc hẹn</label>
+                <select name="appointment_id" class="form-control" required>
+                    <option value="">Chọn một cuộc hẹn</option>
+                    {% for appt in eligible_appts %}
+                    <option value="{{ appt.appointment_id }}">
+                        {{ appt.appointment_time.strftime('%d/%m/%Y %H:%M') }} - {{ appt.reason or 'Không có lý do' }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Chấm điểm (1–5)</label>
+                <input type="number" name="rating" class="form-control" min="1" max="5" required />
             </div>
             <div class="mb-3">
-              <label class="form-label">Bình luận</label>
-              <textarea
-                name="comment"
-                class="form-control"
-                rows="3"
-                required
-              ></textarea>
+                <label class="form-label">Bình luận</label>
+                <textarea name="comment" class="form-control" rows="3" required></textarea>
             </div>
             <button type="submit" class="btn btn-success">Gửi đánh giá</button>
-          </form>
-          <div class="alert alert-warning py-2 px-3 small mb-3">
+        </form>
+        <div class="alert alert-warning py-2 px-3 small mb-3">
             <i class="bi bi-exclamation-triangle me-1"></i>
-            Lưu ý: Bạn chỉ được đánh giá <strong>một lần</strong> cho bác sĩ này
-            và <strong>không thể chỉnh sửa</strong> sau khi gửi.
-          </div>
-          {% else %}
-          <div class="alert alert-info mb-3">
+            Lưu ý: Bạn chỉ được đánh giá <strong>một lần</strong> cho mỗi cuộc hẹn và <strong>không thể chỉnh sửa</strong> sau khi gửi.
+        </div>
+        {% else %}
+        <div class="alert alert-info mb-3">
             Bạn chưa có lịch hẹn hoàn tất với bác sĩ này nên không được viết đánh giá.
-          </div>
-          {% endif %} {% endif %} {% if _reviews and _reviews|length > 0 %}
+        </div>
+        {% endif %}
+        {% endif %}
+          {% if _reviews and _reviews|length > 0 %}
           <div class="mb-2">
             <strong>Trung bình:</strong> {{ avg_rating if avg_rating is not none
             else 'Chưa có' }}

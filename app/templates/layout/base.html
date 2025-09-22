@@ -152,49 +152,39 @@
               </li>
               {% endif %}
 
-              {% if current_user.role.name == 'DOCTOR' %}
+              {% if current_user.role.name == 'PATIENT' %}
               <li class="nav-item w-100 my-3">
                 <a
-                  href="{{ url_for('patient_search') }}"
+                  href="{{ url_for('search_doctor') }}"
                   class="nav-link align-middle text-white"
                   style="font-size: 16px"
                 >
-                  <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm bệnh nhân
+                  <i class="fa-solid fa-magnifying-glass"></i> Tìm kiếm bác sĩ
                 </a>
               </li>
               {% endif %}
 
-              <li class="nav-item w-100 my-3">
+              <!--                    Chỉ có doctor thấy-->
+                        {% if current_user.role.name == 'DOCTOR' %}
+                            <li class="nav-item w-100 my-3">
                 <a
-                  href="/class/edit"
+                  href="/create_schedule"
                   class="nav-link align-middle text-white"
                   style="font-size: 16px"
                 >
-                  <i class="fa-solid fa-wrench"></i> ........
+                  <i class="fa-solid fa-magnifying-glass"></i> Tạo lịch làm việc
                 </a>
               </li>
+                        {% endif %}
 
               <li class="nav-item w-100 my-3">
-                <a
-                  href="/regulations"
-                  class="nav-link align-middle text-white"
-                  style="font-size: 16px"
-                >
-                  <i class="fa-solid fa-circle-info"></i> ........
-                </a>
-              </li>
+    <a href="{{ url_for('profile') }}" class="nav-link align-middle text-white" style="font-size: 16px">
+        <i class="fa-solid fa-user"></i> Hồ sơ của tôi
+    </a>
+</li>
 
-              <li class="nav-item w-100 my-3">
-                <a
-                  href="/acc_info"
-                  class="nav-link align-middle text-white"
-                  style="font-size: 16px"
-                >
-                  <i class="fa-solid fa-circle-info"></i>
-                  <span>Thông tin tài khoản </span>
-                  ({{current_user.username}})
-                </a>
-              </li>
+
+
             </ul>
           </div>
         </div>

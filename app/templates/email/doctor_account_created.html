@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Thông tin tài khoản bác sĩ</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #4CAF50; color: white; padding: 20px; text-align: center; }
+        .content { background-color: #f9f9f9; padding: 20px; border-radius: 5px; }
+        .info-table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        .info-table td { padding: 8px; border-bottom: 1px solid #ddd; }
+        .info-table tr:last-child td { border-bottom: none; }
+        .warning { background-color: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; margin: 15px 0; }
+        .footer { text-align: center; margin-top: 20px; color: #666; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Thông tin tài khoản bác sĩ</h1>
+        </div>
+
+        <div class="content">
+            <p>Kính gửi Bác sĩ <strong>{{ doctor_name }}</strong>,</p>
+            <p>Tài khoản của bạn đã được tạo thành công trên hệ thống đặt lịch khám trực tuyến.</p>
+
+            <h3>Thông tin đăng nhập:</h3>
+            <table class="info-table">
+                <tr>
+                    <td><strong>Tên đăng nhập:</strong></td>
+                    <td>{{ username }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Mật khẩu:</strong></td>
+                    <td>{{ password }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Email:</strong></td>
+                    <td>{{ email }}</td>
+                </tr>
+            </table>
+
+            <h3>Thông tin chuyên môn:</h3>
+            <table class="info-table">
+                <tr>
+                    <td><strong>Bệnh viện:</strong></td>
+                    <td>{{ hospital_name }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Chuyên khoa:</strong></td>
+                    <td>{{ specialty_name }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Phí tư vấn:</strong></td>
+                    <td>{{ consultation_fee|format_currency }} VNĐ</td>
+                </tr>
+            </table>
+
+            <div class="warning">
+                <strong>Lưu ý quan trọng:</strong>
+                <p>Tài khoản của bạn hiện đang ở trạng thái <strong>{{ account_status }}</strong>.
+                Bạn sẽ có thể đăng nhập sau khi giấy phép hành nghề được xác minh bởi quản trị viên.</p>
+            </div>
+
+            <p>Khi tài khoản được kích hoạt, bạn có thể đăng nhập tại:
+            <a href="{{ login_url }}">{{ login_url }}</a></p>
+
+            <p>Vui lòng thay đổi mật khẩu sau khi đăng nhập lần đầu tiên.</p>
+        </div>
+
+        <div class="footer">
+            <p>Đây là email tự động, vui lòng không trả lời email này.</p>
+            <p>© 2024 Hệ thống đặt lịch khám trực tuyến. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

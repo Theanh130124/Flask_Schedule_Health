@@ -1,0 +1,173 @@
+{% extends "layout/base.html" %}
+
+{% block title %}Hồ sơ bệnh nhân - {{ user.first_name }} {{ user.last_name }}{% endblock %}
+
+{% block content %}
+<div class="container my-4">
+    <div class="row">
+        <div class="col-md-4">
+            <!-- Thông tin cá nhân -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Thông tin cá nhân</h5>
+                </div>
+                <div class="card-body text-center">
+                    <img src="{{ user.avatar }}" alt="Avatar" class="rounded-circle mb-3" width="120" height="120">
+                    <h4>{{ user.first_name }} {{ user.last_name }}</h4>
+                    <p class="text-muted">Bệnh nhân</p>
+
+                    <div class="text-start">
+                        <p><strong>Email:</strong> {{ user.email }}</p>
+                        <p><strong>SĐT:</strong> {{ user.phone_number }}</p>
+                        <p><strong>Tuổi:</strong> {{ calculate_age(user.date_of_birth) }} tuổi</p>
+                        <p><strong>Ngày sinh:</strong> {{ user.date_of_birth.strftime('%d/%m/%Y') if user.date_of_birth else 'Chưa cập nhật' }}</p>
+                        <p><strong>Giới tính:</strong>
+                            {% if user.gender %}
+                                {{ 'Nam' if user.gender.name == 'MALE' else 'Nữ' }}
+                            {% else %}
+                                Chưa cập nhật
+                            {% endif %}
+                        </p>
+                        <p><strong>Địa chỉ:</strong> {{ user.address }}</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tiền sử bệnh -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-history me-2"></i>Tiền sử bệnh</h5>
+                </div>
+                <div class="card-body">
+                    {% if patient.medical_history_summary %}
+                        <p>{{ patient.medical_history_summary }}</p>
+                    {% else %}
+                        <p class="text-muted">Chưa cập nhật tiền sử bệnh.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <!-- Lịch hẹn gần đây -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-calendar-check me-2"></i>Lịch hẹn gần đây</h5>
+                </div>
+                <div class="card-body">
+                    {% if appointments %}
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Ngày giờ</th>
+                                        <th>Bác sĩ</th>
+                                        <th>Trạng thái</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for appointment in appointments %}
+                                    <tr>
+                                        <td>{{ appointment.appointment_time.strftime('%d/%m/%Y %H:%M') }}</td>
+                                        <td>BS. {{ appointment.doctor.user.first_name }} {{ appointment.doctor.user.last_name }}</td>
+                                        <td>
+                                            {% if appointment.status.name == "Scheduled" %}
+                                                <span class="badge bg-primary">Đã đặt</span>
+                                            {% elif appointment.status.name == "Completed" %}
+                                                <span class="badge bg-success">Hoàn thành</span>
+                                            {% elif appointment.status.name == "CancelledByPatient" %}
+                                                <span class="badge bg-warning text-dark">Đã hủy</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">{{ appointment.status.value }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <a href="{{ url_for('appointment_detail', appointment_id=appointment.appointment_id) }}"
+                                               class="btn btn-sm btn-outline-primary">Xem</a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-end">
+                            <a href="{{ url_for('my_appointments') }}" class="btn btn-sm btn-primary">Xem tất cả</a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Chưa có lịch hẹn nào. <a href="{{ url_for('available_slots') }}">Đặt lịch ngay</a></p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Hồ sơ sức khỏe -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-warning text-dark">
+                    <h5 class="mb-0"><i class="fas fa-file-medical me-2"></i>Hồ sơ sức khỏe gần đây</h5>
+                </div>
+                <div class="card-body">
+                    {% if health_records %}
+                        {% for record in health_records %}
+                        <div class="health-record-item mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between">
+                                <h6 class="mb-1">{{ record.record_date.strftime('%d/%m/%Y') }}</h6>
+                                <span class="badge bg-light text-dark">
+                                    BS. {{ record.creator.first_name }} {{ record.creator.last_name if record.creator else 'Không xác định' }}
+                                </span>
+                            </div>
+                            {% if record.diagnosis %}
+                                <p class="mb-1"><strong>Chuẩn đoán:</strong> {{ record.diagnosis }}</p>
+                            {% endif %}
+                            {% if record.prescription %}
+                                <p class="mb-1"><strong>Đơn thuốc:</strong> {{ record.prescription }}</p>
+                            {% endif %}
+                            <button class="btn btn-sm btn-outline-secondary mt-2" type="button"
+                                    data-bs-toggle="collapse"
+                                    data-bs-target="#recordDetails{{ record.record_id }}">
+                                Xem chi tiết
+                            </button>
+                            <div class="collapse mt-2" id="recordDetails{{ record.record_id }}">
+                                {% if record.symptoms %}
+                                    <p><strong>Triệu chứng:</strong> {{ record.symptoms }}</p>
+                                {% endif %}
+                                {% if record.notes %}
+                                    <p><strong>Ghi chú:</strong> {{ record.notes }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                        <div class="text-end">
+                            <a href="{{ url_for('patient_detail', patient_id=user.user_id) }}" class="btn btn-sm btn-primary">Xem đầy đủ</a>
+                        </div>
+                    {% else %}
+                        <p class="text-muted">Chưa có hồ sơ sức khỏe nào.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Thống kê -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Thống kê</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-4">
+                            <h4 class="text-primary">{{ stats.total_appointments }}</h4>
+                            <small class="text-muted">Lịch hẹn</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-success">{{ stats.completed_appointments }}</h4>
+                            <small class="text-muted">Đã hoàn thành</small>
+                        </div>
+                        <div class="col-4">
+                            <h4 class="text-info">{{ stats.different_doctors }}</h4>
+                            <small class="text-muted">Bác sĩ đã khám</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

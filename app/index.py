@@ -43,6 +43,7 @@ app.add_url_rule("/complete_appointment/<int:appointment_id>", "complete_appoint
 app.add_url_rule("/upload_license", "upload_license", controllers.upload_license, methods=['GET', 'POST'])
 app.add_url_rule("/patients/search", "patient_search", controllers.patient_search)
 app.add_url_rule("/patients/<int:patient_id>", "patient_detail", controllers.patient_detail)
+app.add_url_rule("/profile", "profile", controllers.profile)
 
 app.add_url_rule("/doctor/<int:doctor_id>/review","review_create",controllers.review_create,methods=["POST"])
 app.add_url_rule("/review/<int:review_id>/update","review_update",controllers.review_update_route,methods=["POST"])

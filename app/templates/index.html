@@ -3,37 +3,120 @@
 HỆ THỐNG ĐẶT LỊCH KHÁM TRỰC TUYẾN
 {% endblock %}
 {% block content %}
+<!-- Hero Section -->
+<section class="hero-section bg-gradient-primary text-white py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6 animate__animated animate__fadeInLeft">
+                <h1 class="display-4 fw-bold mb-3">Chăm sóc sức khỏe chỉ với một cú nhấp chuột</h1>
+                <p class="lead mb-4">Đặt lịch khám nhanh chóng, tiện lợi với đội ngũ bác sĩ chuyên nghiệp và tận tâm.</p>
+                <div class="hero-buttons">
+                    <a href="{{ url_for('search_doctor') }}" class="btn btn-light btn-lg me-3 shadow-sm">
+                        <i class="fas fa-calendar-check me-2"></i>Đặt lịch ngay
+                    </a>
+                    <a href="#features" class="btn btn-outline-light btn-lg">
+                        <i class="fas fa-info-circle me-2"></i>Tìm hiểu thêm
+                    </a>
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <img src="{{ url_for('static', filename='images/hero-doctor.png') }}"
+                     alt="Bác sĩ" class="img-fluid hero-img animate__animated animate__fadeInRight" loading="lazy">
+            </div>
+        </div>
+    </div>
+</section>
 
-<div class="container page-wrapper" style="display:block;">
-    <!-- Page Breadcrumb -->
-    <div class="page-breadcrumb">
-        <div class="row">
-            <div class="col-12 text-center mt-5 mb-3">
-                <h3 class="page-title text-truncate text-dark font-weight-medium mb-1">
-                    Tin tức/Thông báo dành riêng cho bạn
-                </h3>
-                <div class="d-flex align-items-center justify-content-center">
-                    <nav aria-label="breadcrumb">
-                        <ol class="breadcrumb m-0 p-0">
-                            <li class="breadcrumb-item">
-                                <a href="#" class="text-muted">Các tin tức/thông báo chỉ liên quan đến bạn</a>
-                            </li>
-                        </ol>
-                    </nav>
+
+<!-- Features Section -->
+<section id="features" class="features-section py-5">
+    <div class="container">
+        <h2 class="text-center mb-5">Tại sao chọn chúng tôi?</h2>
+        <div class="row text-center">
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm border-0 h-100 animate__animated animate__zoomIn">
+                    <div class="card-body">
+                        <i class="fas fa-user-md fa-3x text-primary mb-3"></i>
+                        <h4 class="card-title">Bác sĩ chuyên môn cao</h4>
+                        <p class="card-text">Đội ngũ bác sĩ giàu kinh nghiệm từ các bệnh viện hàng đầu.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm border-0 h-100 animate__animated animate__zoomIn" style="animation-delay: 0.2s;">
+                    <div class="card-body">
+                        <i class="fas fa-clock fa-3x text-primary mb-3"></i>
+                        <h4 class="card-title">Đặt lịch nhanh chóng</h4>
+                        <p class="card-text">Chỉ mất vài phút để đặt lịch khám với bác sĩ bạn chọn.</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-4">
+                <div class="card shadow-sm border-0 h-100 animate__animated animate__zoomIn" style="animation-delay: 0.4s;">
+                    <div class="card-body">
+                        <i class="fas fa-shield-alt fa-3x text-primary mb-3"></i>
+                        <h4 class="card-title">Bảo mật thông tin</h4>
+                        <p class="card-text">Thông tin cá nhân và hồ sơ y tế được bảo vệ an toàn.</p>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
+</section>
 
-    <div class="container-fluid">
-        <div class="col-12 text-center">
-            <hr class="my-4">
+<!-- News Carousel Section -->
+<section class="news-section py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-4">Tin tức & Thông báo</h2>
+        <div id="newsCarousel" class="carousel slide" data-bs-ride="carousel">
+            <div class="carousel-inner">
+                <div class="carousel-item active">
+                    <div class="card shadow-sm border-0">
+                        <div class="row g-0">
+                            <div class="col-md-4">
+                                <img src="{{ url_for('static', filename='images/news1.jpg') }}"
+                                     class="img-fluid rounded-start" alt="Tin tức 1" loading="lazy">
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card-body">
+                                    <h5 class="card-title">Khám sức khỏe định kỳ - Bí quyết sống khỏe</h5>
+                                    <p class="card-text">Tầm soát sức khỏe định kỳ giúp phát hiện sớm các vấn đề y tế.</p>
+                                    <a href="#" class="btn btn-primary">Đọc thêm</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="carousel-item">
+                    <div class="card shadow-sm border-0">
+                        <div class="row g-0">
+                            <div class="col-md-4">
+                                <img src="{{ url_for('static', filename='images/news2.jpg') }}"
+                                     class="img-fluid rounded-start" alt="Tin tức 2" loading="lazy">
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card-body">
+                                    <h5 class="card-title">Ưu đãi đặt lịch tháng này</h5>
+                                    <p class="card-text">Giảm 20% phí khám khi đặt lịch qua hệ thống.</p>
+                                    <a href="#" class="btn btn-primary">Đọc thêm</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button class="carousel-control-prev" type="button" data-bs-target="#newsCarousel" data-bs-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Previous</span>
+            </button>
+            <button class="carousel-control-next" type="button" data-bs-target="#newsCarousel" data-bs-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="visually-hidden">Next</span>
+            </button>
         </div>
-
-
-
     </div>
-</div>
+</section>
+
 <!-- Autocomplete JS -->
 <script>
 $(function() {
@@ -59,4 +142,34 @@ $(function() {
     });
 });
 </script>
+
+<!-- Custom CSS -->
+<style>
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff 0%, #00c4ff 100%);
+}
+.hero-img {
+    max-height: 400px;
+    object-fit: contain;
+}
+.search-section .form-control {
+    border-radius: 0.5rem;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+.carousel-item .card {
+    margin: 0 auto;
+    max-width: 800px;
+}
+.carousel-control-prev, .carousel-control-next {
+    width: 5%;
+    background: rgba(0,0,0,0.3);
+}
+</style>
 {% endblock %}

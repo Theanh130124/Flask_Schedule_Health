@@ -1,128 +1,302 @@
-{% extends "layout/base.html" %} {% block title %}Kết quả tìm kiếm{% endblock %}
+{% extends "layout/base.html" %}
+{% block title %}Kết quả tìm kiếm{% endblock %}
 {% block content %}
-<h2 class="mb-3">Kết quả tìm kiếm bác sĩ</h2>
+<div class="container mt-4">
+    <h2 class="mb-3"><i class="fas fa-search me-2"></i>Kết quả tìm kiếm bác sĩ</h2>
 
-{% if doctors %}
-<div class="row g-3">
-  {% for d in doctors %} {% set doctor_title = 'Bác sĩ ' ~ d.name %}
-  <div class="col-12 col-md-6 col-lg-4">
-    <div class="card h-100 shadow-sm doctor-card">
-      <div class="card-body">
-        <div class="d-flex align-items-start justify-content-between">
-          <div class="d-flex gap-3">
-            <div class="doctor-avatar">
-              {% if d.avatar %}
-              <img src="{{ d.avatar }}" alt="{{ doctor_title }}" />
-              {% else %}
-              <div class="avatar-fallback">{{ d.name[:1] }}</div>
-              {% endif %}
-            </div>
-            <div>
-              <h5 class="card-title mb-1 clamp-1">{{ doctor_title }}</h5>
-              <div class="small text-muted clamp-1">
-                <i class="bi bi-hospital me-1"></i>{{ d.hospital }}
-              </div>
-            </div>
-          </div>
-
-          {% if d.accepts_insurance %}
-          <span class="badge bg-success">Có Bảo Hiểm</span>
-          {% else %}
-          <span class="badge bg-secondary">Không Bảo Hiểm</span>
-          {% endif %}
+    <!-- Form tìm kiếm với bộ lọc thông minh -->
+    <div class="card mb-4 border-0 shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Bộ lọc tìm kiếm</h5>
         </div>
+        <div class="card-body">
+            <form action="/search_doctor" method="GET">
+                <div class="row">
+                    <!-- Bộ chọn loại tìm kiếm -->
+                    <div class="col-md-3 mb-3">
+                        <label class="form-label fw-semibold">Tìm kiếm theo:</label>
+                        <div class="btn-group-vertical w-100" role="group">
+                          <input type="radio" class="btn-check" name="search_type" id="search_hospital" value="hospital"
+                                   autocomplete="off" {% if search_type == 'hospital' or not search_type %}checked{% endif %}>
+                            <label class="btn btn-outline-primary text-start" for="search_hospital">
+                                <i class="fas fa-hospital me-1"></i> Bệnh viện
+                            </label>
 
-        <hr class="my-3" />
+                            <input type="radio" class="btn-check" name="search_type" id="search_specialty" value="specialty"
+                                   autocomplete="off" {% if search_type == 'specialty' %}checked{% endif %}>
+                            <label class="btn btn-outline-primary text-start" for="search_specialty">
+                                <i class="fas fa-stethoscope me-1"></i> Chuyên khoa
+                            </label>
 
-        <ul class="list-unstyled mb-3">
-          <li class="mb-1">
-            <i class="bi bi-clipboard2-pulse me-1"></i>
-            <strong>Chuyên khoa:</strong> {{ d.specialty }}
-          </li>
-          <li class="mb-1">
-            <i class="bi bi-mortarboard me-1"></i>
-            <strong>Kinh nghiệm:</strong>
-            {% if d.experience is not none %}{{ d.experience }} năm{% else %}-{%
-            endif %}
-          </li>
-          <li class="mb-1">
-            <i class="bi bi-cash-coin me-1"></i>
-            <strong>Phí khám:</strong>
-            {% if d.consultation_fee is not none %} {{
-            "{:,.0f}".format(d.consultation_fee) }} đ {% else %}-{% endif %}
-          </li>
-          <li>
-            <strong>Đánh giá:</strong>
-            {% if d.rating is not none %} {% set rating = d.rating %} {% set
-            full = rating|int %} {% set half = 1 if (rating - full) >= 0.5 else
-            0 %} {% set empty = 5 - full - half %}
-            <span
-              class="rating-stars ms-1"
-              aria-label="Đánh giá {{ '%.1f'|format(rating) }} trên 5"
-            >
-              {% for _ in range(full) %}<i
-                class="bi bi-star-fill text-warning"
-              ></i
-              >{% endfor %} {% if half %}<i
-                class="bi bi-star-half text-warning"
-              ></i
-              >{% endif %} {% for _ in range(empty) %}<i
-                class="bi bi-star text-warning"
-              ></i
-              >{% endfor %}
-            </span>
-            <span class="small text-muted ms-1"
-              >({{ "{:.1f}".format(rating) }})</span
-            >
-            {% else %}
-            <span class="text-muted ms-1">Chưa có</span>
-            {% endif %}
-          </li>
-        </ul>
+                            <input type="radio" class="btn-check" name="search_type" id="search_doctor" value="doctor"
+                                   autocomplete="off" {% if search_type == 'doctor' %}checked{% endif %}>
+                            <label class="btn btn-outline-primary text-start" for="search_doctor">
+                                <i class="fas fa-user-md me-1"></i> Tên bác sĩ
+                            </label>
+                        </div>
+                    </div>
 
-        <div class="d-grid gap-2">
-          <a
-            href="{{ url_for('doctor_detail', doctor_id=d.doctor_id) }}"
-            class="btn btn-outline-primary"
-          >
-            Xem chi tiết
-          </a>
+                    <!-- Ô nhập liệu tương ứng với loại tìm kiếm -->
+                    <div class="col-md-6 mb-3">
+                        <div id="hospital_search" class="search-field">
+                            <label for="hospital" class="form-label fw-semibold">Tên bệnh viện</label>
+                            <input type="text" id="hospital" name="hospital" class="form-control"
+                                   placeholder="Nhập tên bệnh viện..." value="{{ hospital_name or '' }}">
+                        </div>
 
-          <a
-            href="{{ url_for('doctor_detail', doctor_id=d.doctor_id) }}"
-            class="btn btn-outline-primary"
-          >
-            Đánh giá
-          </a>
+                        <div id="specialty_search" class="search-field d-none">
+                            <label for="specialty" class="form-label fw-semibold">Tên chuyên khoa</label>
+                            <input type="text" id="specialty" name="specialty" class="form-control"
+                                   placeholder="Nhập tên chuyên khoa..." value="{{ specialty_name or '' }}">
+                        </div>
+
+                        <div id="doctor_search" class="search-field d-none">
+                            <label for="doctor_name" class="form-label fw-semibold">Tên bác sĩ</label>
+                            <input type="text" id="doctor_name" name="doctor_name" class="form-control"
+                                   placeholder="Nhập tên bác sĩ..." value="{{ doctor_name or '' }}">
+                        </div>
+                    </div>
+
+                    <!-- Nút tìm kiếm -->
+                    <div class="col-md-3 mb-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary me-2 flex-grow-1">
+                            <i class="fas fa-search me-1"></i> Tìm kiếm
+                        </button>
+                        <a href="{{ url_for('search_doctor') }}" class="btn btn-secondary">
+                            <i class="fas fa-times me-1"></i> Xóa
+                        </a>
+                    </div>
+                </div>
+                <!-- Thêm các tham số phân trang vào form -->
+                <input type="hidden" name="page" value="1">
+            </form>
         </div>
-      </div>
     </div>
-  </div>
-  {% endfor %}
+
+    <!-- Kết quả tìm kiếm -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i>Danh sách bác sĩ</h5>
+            {% if total_count > 0 %}
+            <span class="badge bg-primary rounded-pill">Tổng: {{ total_count }} bác sĩ</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if doctors %}
+            <div class="row g-3">
+                {% for doctor in doctors %}
+                <div class="col-12 col-md-6 col-lg-4">
+                    <div class="card h-100 shadow-sm doctor-card">
+                        <div class="card-body">
+                            <div class="d-flex align-items-start justify-content-between">
+                                <div class="d-flex gap-3">
+                                    <div class="doctor-avatar">
+                                        {% if doctor.user.avatar %}
+                                        <img src="{{ doctor.user.avatar }}" alt="Avatar bác sĩ" />
+                                        {% else %}
+                                        <div class="avatar-fallback">{{ doctor.user.first_name[:1] }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h5 class="card-title mb-1 clamp-1">BS. {{ doctor.user.first_name }} {{ doctor.user.last_name }}</h5>
+                                        <div class="small text-muted clamp-1">
+                                            <i class="fas fa-hospital me-1"></i>{{ doctor.hospital.name }}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {% if doctor.hospital.accepts_insurance %}
+                                <span class="badge bg-success">Có Bảo Hiểm</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Không Bảo Hiểm</span>
+                                {% endif %}
+                            </div>
+
+                            <hr class="my-3" />
+
+                            <ul class="list-unstyled mb-3">
+                                <li class="mb-1">
+                                    <i class="fas fa-clipboard-list me-1"></i>
+                                    <strong>Chuyên khoa:</strong> {{ doctor.specialty.name }}
+                                </li>
+                                <li class="mb-1">
+                                    <i class="fas fa-graduation-cap me-1"></i>
+                                    <strong>Kinh nghiệm:</strong>
+                                    {% if doctor.years_experience is not none %}{{ doctor.years_experience }} năm{% else %}-{% endif %}
+                                </li>
+                                <li class="mb-1">
+                                    <i class="fas fa-money-bill-wave me-1"></i>
+                                    <strong>Phí khám:</strong>
+                                    {% if doctor.consultation_fee is not none %} {{ "{:,.0f}".format(doctor.consultation_fee) }} đ {% else %}-{% endif %}
+                                </li>
+                                <li>
+                                    <strong>Đánh giá:</strong>
+                                    {% if doctor.average_rating is not none and doctor.average_rating > 0 %}
+                                    {% set rating = doctor.average_rating %}
+                                    {% set full = rating|int %}
+                                    {% set half = 1 if (rating - full) >= 0.5 else 0 %}
+                                    {% set empty = 5 - full - half %}
+                                    <span class="rating-stars ms-1" aria-label="Đánh giá {{ '%.1f'|format(rating) }} trên 5">
+                                        {% for _ in range(full) %}<i class="fas fa-star text-warning"></i>{% endfor %}
+                                        {% if half %}<i class="fas fa-star-half-alt text-warning"></i>{% endif %}
+                                        {% for _ in range(empty) %}<i class="far fa-star text-warning"></i>{% endfor %}
+                                    </span>
+                                    <span class="small text-muted ms-1">({{ "{:.1f}".format(rating) }})</span>
+                                    {% else %}
+                                    <span class="text-muted ms-1">Chưa có đánh giá</span>
+                                    {% endif %}
+                                </li>
+                            </ul>
+
+                            <div class="d-grid gap-2">
+                                <a href="{{ url_for('doctor_detail', doctor_id=doctor.doctor_id) }}" class="btn btn-outline-primary">
+                                    <i class="fas fa-info-circle me-1"></i>Xem chi tiết
+                                </a>
+                                <a href="{{ url_for('available_slots') }}?doctor_id={{ doctor.doctor_id }}" class="btn btn-primary">
+                                    <i class="fas fa-calendar-check me-1"></i>Đặt lịch ngay
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Phân trang -->
+            {% if total_pages > 1 %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if current_page > 1 %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('search_doctor', page=current_page-1, hospital=hospital_name, specialty=specialty_name, doctor_name=doctor_name, search_type=search_type) }}"
+                           aria-label="Previous">
+                            <span aria-hidden="true">&laquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+
+                    {% for page_num in range(1, total_pages + 1) %}
+                        {% if page_num == current_page %}
+                        <li class="page-item active">
+                            <span class="page-link">{{ page_num }}</span>
+                        </li>
+                        {% else %}
+                        <li class="page-item">
+                            <a class="page-link" href="{{ url_for('search_doctor', page=page_num, hospital=hospital_name, specialty=specialty_name, doctor_name=doctor_name, search_type=search_type) }}">
+                                {{ page_num }}
+                            </a>
+                        </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if current_page < total_pages %}
+                    <li class="page-item">
+                        <a class="page-link" href="{{ url_for('search_doctor', page=current_page+1, hospital=hospital_name, specialty=specialty_name, doctor_name=doctor_name, search_type=search_type) }}"
+                           aria-label="Next">
+                            <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            <!-- Kết thúc phân trang -->
+
+            {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-user-md fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Không tìm thấy bác sĩ nào</h5>
+                <p class="text-muted">Không có bác sĩ nào phù hợp với tiêu chí tìm kiếm của bạn.</p>
+                <a href="{{ url_for('search_doctor') }}" class="btn btn-primary mt-2">
+                    <i class="fas fa-redo me-1"></i>Thử lại với bộ lọc khác
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
 </div>
-{% else %}
-<div class="alert alert-warning">Không tìm thấy bác sĩ nào.</div>
-{% endif %}
 
 <style>
-  .doctor-avatar img {
-    width: 64px;
-    height: 64px;
-    object-fit: cover; /* cắt vừa khung, không méo hình */
-    border-radius: 50%; /* bo tròn avatar */
-    border: 2px solid #ddd; /* viền nhẹ */
-  }
+    .doctor-avatar img {
+        width: 64px;
+        height: 64px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid #ddd;
+    }
 
-  .avatar-fallback {
-    width: 64px;
-    height: 64px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #ccc;
-    color: #fff;
-    font-size: 20px;
-    border-radius: 50%;
-  }
+    .avatar-fallback {
+        width: 64px;
+        height: 64px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #ccc;
+        color: #fff;
+        font-size: 20px;
+        border-radius: 50%;
+    }
+
+    .doctor-card {
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .doctor-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-check:checked + .btn {
+        background-color: #2c7da0;
+        border-color: #2c7da0;
+        color: white;
+    }
+
+    .page-item.active .page-link {
+        background-color: #2c7da0;
+        border-color: #2c7da0;
+    }
+
+    .page-link {
+        color: #2c7da0;
+    }
+
+    .clamp-1 {
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+    }
 </style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Hiển thị ô nhập liệu tương ứng với loại tìm kiếm được chọn
+    function updateSearchField() {
+        // Ẩn tất cả các ô tìm kiếm
+        document.querySelectorAll('.search-field').forEach(field => {
+            field.classList.add('d-none');
+        });
+
+        // Hiển thị ô tìm kiếm được chọn
+        const selectedType = document.querySelector('input[name="search_type"]:checked').value;
+        document.getElementById(selectedType + '_search').classList.remove('d-none');
+    }
+
+    // Lắng nghe sự kiện thay đổi loại tìm kiếm
+    document.querySelectorAll('input[name="search_type"]').forEach(radio => {
+        radio.addEventListener('change', updateSearchField);
+    });
+
+    // Khởi tạo ban đầu
+    updateSearchField();
+
+    // Reset về trang 1 khi thay đổi bộ lọc
+    document.querySelectorAll('#hospital, #specialty, #doctor_name').forEach(element => {
+        element.addEventListener('change', function() {
+            document.querySelector('input[name="page"]').value = 1;
+        });
+    });
+});
+</script>
 {% endblock %}

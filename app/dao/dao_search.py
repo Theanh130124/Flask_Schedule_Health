@@ -47,3 +47,27 @@ def search_doctors(hospital_name=None, specialty_name=None, doctor_name=None,
         })
     return results
 
+
+def search_doctors_paginated(hospital_name=None, specialty_name=None, doctor_name=None, page=1, per_page=6):
+    query = db.session.query(Doctor).join(User).join(Specialty).join(Hospital)
+
+    # Áp dụng bộ lọc
+    if hospital_name:
+        query = query.filter(Hospital.name.ilike(f"%{hospital_name}%"))
+    if specialty_name:
+        query = query.filter(Specialty.name.ilike(f"%{specialty_name}%"))
+    if doctor_name:
+        query = query.filter(
+            db.or_(
+                User.first_name.ilike(f"%{doctor_name}%"),
+                User.last_name.ilike(f"%{doctor_name}%")
+            )
+        )
+
+    # Đếm tổng số kết quả
+    total_count = query.count()
+
+    # Phân trang
+    doctors = query.offset((page - 1) * per_page).limit(per_page).all()
+
+    return doctors, total_count

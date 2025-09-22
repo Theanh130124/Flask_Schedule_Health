@@ -64,6 +64,7 @@ def get_doctor_appointments(doctor_id):
                 .order_by(Appointment.appointment_time.desc())
                 .all())
 
+
 #Hủy lịch
 def cancel_appointment(appointment_id, reason, cancelled_by_patient=True):
     try:

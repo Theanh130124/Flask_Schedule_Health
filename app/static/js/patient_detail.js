@@ -9,8 +9,8 @@ function openDiagnosisModal(appointmentId, patientId, doctorId, appointmentTimeS
     // Kiểm tra thời gian trước khi mở modal
     const now = new Date();
     const appointmentDate = new Date(appointmentTimeStr);
-    const oneHourBefore = new Date(appointmentDate.getTime() - 60 * 60 * 1000);
-    const oneHourAfter = new Date(appointmentDate.getTime() + 60 * 60 * 1000);
+    const oneHourBefore = new Date(appointmentDate.getTime() - 60 * 60 * 1000 *24 *7);
+    const oneHourAfter = new Date(appointmentDate.getTime() + 60 * 60 * 1000*24 *7);
 
     if (now < oneHourBefore || now > oneHourAfter) {
         alert('Chỉ có thể chuẩn đoán trong khoảng thời gian từ 1 giờ trước đến 1 giờ sau giờ hẹn khám.');
