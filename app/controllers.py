@@ -432,9 +432,11 @@ def upload_license():
 
     return render_template('upload_license.html', doctor_id=doctor_id)
 
+
 def register():
     form = RegisterForm()
     mse = None
+
     if form.validate_on_submit():
         username = form.username.data
         email = form.email.data
@@ -446,24 +448,43 @@ def register():
         date_of_birth = form.date_of_birth.data
         gender = form.gender.data
 
-        # Tạo user bằng dao_user
-        new_user = dao_user.create_user_with_role(
-            username=username,
-            email=email,
-            password=password,
-            first_name=first_name,
-            last_name=last_name,
-            phone_number=phone_number,
-            address=address,
-            date_of_birth=date_of_birth,
-            gender=gender
-        )
+        # Kiểm tra các trường đã tồn tại trước khi tạo user
+        validation_errors = []
 
-        if new_user:
-            flash("Đăng ký thành công! Hãy đăng nhập.", "success")
-            return redirect(url_for("login"))
+        # Kiểm tra username đã tồn tại
+        if dao_user.check_username_exists(username):
+            validation_errors.append("Tên đăng nhập đã tồn tại!")
+
+        # Kiểm tra email đã tồn tại
+        if dao_user.check_email_exists(email):
+            validation_errors.append("Email đã tồn tại!")
+
+        # Kiểm tra số điện thoại đã tồn tại
+        if dao_user.check_phone_exists(phone_number):
+            validation_errors.append("Số điện thoại đã tồn tại!")
+
+        # Nếu có lỗi validation, hiển thị tất cả lỗi
+        if validation_errors:
+            mse = " | ".join(validation_errors)
         else:
-            mse = "Tên đăng nhập hoặc email đã tồn tại!"
+            # Tạo user bằng dao_user
+            new_user = dao_user.create_user_with_role(
+                username=username,
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name,
+                phone_number=phone_number,
+                address=address,
+                date_of_birth=date_of_birth,
+                gender=gender
+            )
+
+            if new_user:
+                flash("Đăng ký thành công! Hãy đăng nhập.", "success")
+                return redirect(url_for("login"))
+            else:
+                mse = "Có lỗi xảy ra khi tạo tài khoản. Vui lòng thử lại!"
 
     return render_template("register.html", form=form, mse=mse)
 

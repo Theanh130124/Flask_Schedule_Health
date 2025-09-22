@@ -11,22 +11,46 @@
     <title>HỆ THỐNG ĐẶT LỊCH KHÁM TRỰC TUYẾN</title>
     <!--   Thêm css riêng nếu cần-->
     {% block additional_css %}{% endblock %}
+        <style>
+        /* Bỏ hiệu ứng hover cho alert/toaster */
+        .alert {
+            transition: none !important;
+        }
+        .alert:hover {
+            transform: none !important;
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+        .alert-dismissible .close {
+            transition: none !important;
+        }
+        .alert-dismissible .close:hover {
+            background-color: transparent !important;
+            opacity: 0.7 !important;
+        }
+
+        /* Giữ shadow cố định, không đổi khi hover */
+        .alert.shadow {
+            box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+        }
+    </style>
 </head>
 <body>
 {% with messages = get_flashed_messages(with_categories=true) %}
   {% if messages %}
-    <div class="toast-container position-fixed top-0 end-0 p-3">
+    <div style="position: fixed; top: 20px; right: 20px; z-index: 1050; min-width: 300px;">
       {% for category, message in messages %}
-      <div class="toast align-items-center text-white bg-{{ 'danger' if category == 'danger' else 'success' }} border-0 mb-2"
-           role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="6000">
-        <div class="d-flex">
-          <div class="toast-body">{{ message }}</div>
-          <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        <div class="alert alert-{{ 'danger' if category == 'error' else 'success' }} alert-dismissible fade show shadow" role="alert">
+          <i class="fas fa-{{ 'exclamation-triangle' if category == 'error' else 'check-circle' }} me-2"></i>
+          <strong>{{ 'Lỗi!' if category == 'error' else 'Thành công!' }}</strong> {{ message }}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
-      </div>
       {% endfor %}
     </div>
   {% endif %}
+{% endwith %}
+
 
 <main>
 
@@ -54,7 +78,7 @@
   });
 </script>
 
-{% endwith %}
+
 
 
 </body>
