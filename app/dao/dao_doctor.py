@@ -33,6 +33,19 @@ def create_doctor_availability(doctor_id, day_of_week, start_time, end_time, is_
 def get_doctor_availabilities(doctor_id):
     return DoctorAvailability.query.filter_by(doctor_id=doctor_id).all()
 
+def get_doctor_availabilities_detail(doctor_id):
+    """
+    Lấy lịch làm việc của bác sĩ
+    """
+    try:
+        from app.models import DoctorAvailability
+        availabilities = DoctorAvailability.query.filter_by(
+            doctor_id=doctor_id
+        ).order_by(DoctorAvailability.day_of_week).all()
+        return availabilities
+    except Exception as e:
+        current_app.logger.error(f"Error getting doctor availabilities: {str(e)}")
+        return []
 #Lấy lịch làm bs theo ngày
 def get_doctor_availability_by_day(doctor_id, day_of_week):
     return DoctorAvailability.query.filter_by(

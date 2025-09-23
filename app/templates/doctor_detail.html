@@ -164,6 +164,30 @@
           {% endif %}
         </div>
       </div>
+      <div class="card shadow-sm mb-3">
+    <div class="card-header fw-semibold">Lịch làm việc</div>
+    <div class="card-body">
+      {% if availabilities and availabilities|length > 0 %}
+            <div class="row">
+                {% set available_days = availabilities|selectattr("is_available")|list %}
+                {% if available_days|length > 0 %}
+                    {% for availability in available_days %}
+                        <div class="col-md-6 mb-2">
+                            <strong>{{ availability.day_of_week.value }}:</strong>
+                            {{ availability.start_time.strftime('%H:%M') }} - {{ availability.end_time.strftime('%H:%M') }}
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="col-12">
+                        <p class="text-muted mb-0">Bác sĩ chưa thiết lập lịch làm việc.</p>
+                    </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="text-muted">Chưa có thông tin lịch làm việc.</div>
+        {% endif %}
+          </div>
+</div>
 
       <!-- Đánh giá -->
       {% set _reviews = reviews if reviews is defined else d.reviews %}

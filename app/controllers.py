@@ -271,13 +271,16 @@ def doctor_detail(doctor_id: int):
                .order_by(Review.review_date.desc())
                .all())
 
+    availabilities = dao_doctor.get_doctor_availabilities_detail(doctor_id)
+
     return render_template(
         "doctor_detail.html",
         d=d,
         avg_rating=avg_rating,
         upcoming_slots=upcoming_slots[:10],
         reviews=reviews,
-        eligible_appts=eligible_appts
+        eligible_appts=eligible_appts,
+        availabilities=availabilities
     )
 # chitiettimkiem
 

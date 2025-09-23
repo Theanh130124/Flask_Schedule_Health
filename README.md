@@ -19,5 +19,7 @@ taskkill /PID 12345 /F
 cd .. 
 python -m app.index.py 
 
+python -m unittest test_dao_available_slot.py
+
 
 ```
