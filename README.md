@@ -17,6 +17,10 @@ Flask_Schedule_Health
 <h1>Jira task</h1>
 <img width="1560" height="802" alt="image" src="https://github.com/user-attachments/assets/9b776879-4017-4920-8abd-1c6fb510511f" />
 
+<h1>WBS and Gantt Chart</h1>
+<img width="1860" height="673" alt="image" src="https://github.com/user-attachments/assets/3952e6d4-c603-452c-814a-17772ec67062" />
+
+
 ```
 
 
