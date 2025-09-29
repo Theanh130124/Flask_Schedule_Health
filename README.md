@@ -3,7 +3,7 @@ Flask_Schedule_Health
 
 <h1>Link report</h1>
 
-<a href="https://docs.google.com/document/d/1wxhVt1w1Gb2qlwhELn7K40SBMxTmMkfW/edit" alt="Link report"/>
+<a href="https://docs.google.com/document/d/1wxhVt1w1Gb2qlwhELn7K40SBMxTmMkfW/edit" alt="Link report"> Link report click here <a/>
 
 
 <h1>System Architecture</h1>
