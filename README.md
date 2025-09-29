@@ -14,7 +14,8 @@ Flask_Schedule_Health
 <h1>Relational Database</h1>
 <img width="761" height="744" alt="image" src="https://github.com/user-attachments/assets/6e4a1010-7857-4b79-8069-55f4d1aecf8b" />
 
-
+<h1>Jira task</h1>
+<img width="1560" height="802" alt="image" src="https://github.com/user-attachments/assets/9b776879-4017-4920-8abd-1c6fb510511f" />
 
 ```
 
